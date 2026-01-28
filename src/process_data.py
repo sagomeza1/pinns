@@ -333,9 +333,10 @@ class ProcessDataColombia:
         self.altura = wsdata["altura"]
         self.segundos = wsdata["segundos"]
         self.presion = wsdata["presion"]
-        self.vel_u = wsdata["vel u"]
-        self.vel_v = wsdata["vel v"]
+        self.vel_u = wsdata["vel_u"]
+        self.vel_v = wsdata["vel_v"]
         self.temperatura = wsdata["temperatura"]
+        self.numero_estaciones = wsdata['codigo_estacion'].nunique()
 
     def process_data(self, **kwargs) -> None:
 
@@ -344,8 +345,7 @@ class ProcessDataColombia:
         print("--- OK ---")
 
         print("--- Eliminar NaNs ---")
-        delete_kwargs = {k: v for k, v in kwargs.items() if k in ['num_stations']}
-        self._delete_nans(**delete_kwargs)
+        self._reshape_delete_nans()
         print("--- OK ---")
 
         print("--- Selección de días y ordenamiento por coor ---")
@@ -379,21 +379,21 @@ class ProcessDataColombia:
         self.P_WS = self.presion * 100
         self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
 
-    def _delete_nans(self, num_stations:int = 7) -> None:
+    def _reshape_delete_nans(self) -> None:
         T_nan_index = np.argwhere(pd.isna(self.segundos))
         # Eliminar NaNs de campos temporales
         for arr in [self.X_WS, self.Y_WS, self.Z_WS, self.U_WS,
                     self.V_WS, self.P_WS, self.Temp_WS]:
             arr = np.delete(arr, T_nan_index[:, 0], 0) # type: ignore
 
-        self.T_WS = self._reshape_data(self.T_WS, num_stations)
-        self.X_WS = self._reshape_data(self.X_WS, num_stations)
-        self.Y_WS = self._reshape_data(self.Y_WS, num_stations)
-        self.Z_WS = self._reshape_data(self.Z_WS, num_stations)
-        self.U_WS = self._reshape_data(self.U_WS, num_stations)
-        self.V_WS = self._reshape_data(self.V_WS, num_stations)
-        self.P_WS = self._reshape_data(self.P_WS, num_stations)
-        self.Temp_WS = self._reshape_data(self.Temp_WS, num_stations)
+        self.T_WS = self._reshape_data(self.T_WS)
+        self.X_WS = self._reshape_data(self.X_WS)
+        self.Y_WS = self._reshape_data(self.Y_WS)
+        self.Z_WS = self._reshape_data(self.Z_WS)
+        self.U_WS = self._reshape_data(self.U_WS)
+        self.V_WS = self._reshape_data(self.V_WS)
+        self.P_WS = self._reshape_data(self.P_WS)
+        self.Temp_WS = self._reshape_data(self.Temp_WS)
 
         # Eliminar estaciones con NaNs en ubicación
         X_nan_index = np.argwhere(np.isnan(self.X_WS))
@@ -407,9 +407,9 @@ class ProcessDataColombia:
         self.Z_WS = np.delete(self.Z_WS, X_nan_index[:, 0], 0)
         self.Temp_WS = np.delete(self.Temp_WS, X_nan_index[:, 0], 0)
 
-    def _reshape_data(self, arr: np.ndarray, num_stations: int) -> None:
+    def _reshape_data(self, arr: np.ndarray) -> None:
         # Reestructurar matrices: 7 estaciones x mediciones
-        return np.reshape(arr, (int(arr.shape[0] / num_stations), num_stations), order="F").T
+        return np.reshape(arr, (int(arr.shape[0] / self.numero_estaciones), self.numero_estaciones), order="F").T
 
     def _filter_by_time_and_sort_by_coor(self, n_days: int = 31, interval: int = 1) -> None:
         """
@@ -497,21 +497,20 @@ class ProcessDataColombia:
         L = np.sqrt((x_max - x_min)**2 + (y_max - y_min)**2)
         W = np.sqrt(np.nanmax(np.abs(self.U_WS))**2 + np.nanmax(np.abs(self.V_WS))**2)
         Re = int(W * L / nu)
-        P0 = np.nanmean(self.P_WS) / (p_max - p_min)
+        P0 = np.nanmean(self.P_WS)# / (p_max - p_min)
 
         print(f'---> L: {L:.2f}, W: {W:.2f}, P0: {P0:.2f}, Re: {Re} --')
 
         self.X_WS = self.X_WS / L
         self.Y_WS = self.Y_WS / L
-        self.T_WS = self.T_WS * W / (L * 3)
-        self.P_WS = (self.P_WS - p_min) / (p_max - p_min)
-        self.P_WS = (self.P_WS - P0)
+        self.T_WS = self.T_WS * W / L
+        self.P_WS = (self.P_WS - P0) / rho / W**2
         self.U_WS = self.U_WS / W
         self.V_WS = self.V_WS / W
 
         self.X_PINN = X_PINN_full / L
         self.Y_PINN = Y_PINN_full / L
-        self.T_PINN = T_PINN_full * W / (L * 3)
+        self.T_PINN = T_PINN_full * W / L
 
         self.params['L'] = L
         self.params['W'] = W
@@ -598,7 +597,3 @@ class ProcessDataColombia:
                     Y_PINN = self.Y_PINN,
                     )
         print(f"Data guardada en: {data_file_path}")
-
-
-###########################
-
