@@ -1,4 +1,4 @@
-use BD_REM;
+use EM_CUN;
 go
 
 update dbo.presion
@@ -23,11 +23,5 @@ update dbo.temp_aire
 set latitud = round(latitud, 3);
 
 update dbo.temp_aire
-set longitud = round(longitud, 3);
----------------------------------
-update dbo.humd_aire
-set latitud = round(latitud, 3);
-
-update dbo.humd_aire
 set longitud = round(longitud, 3);
 ---------------------------------

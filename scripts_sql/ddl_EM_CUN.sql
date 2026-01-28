@@ -1,4 +1,4 @@
-use BD_REM;
+use EM_CUN;
 go
 
 -- Se eliminan las tablas previamente creadas
