@@ -1,4 +1,4 @@
-use EM_CUN;
+use EM_CUNBOY;
 go
 
 with lon_lat as(
