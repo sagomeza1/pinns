@@ -104,8 +104,8 @@ class ProcessDataBrusselas:
 
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
-        self.X_WS = np.array(7*6378000 * np.sin(np.radians(self.WS_data['Lon'])))[0]
-        self.Y_WS = np.array(7*6378000 * np.sin(np.radians(self.WS_data['Lat'])))[0]
+        self.X_WS = np.array(6378000 * np.sin(np.radians(self.WS_data['Lon'])))[0]
+        self.Y_WS = np.array(6378000 * np.sin(np.radians(self.WS_data['Lat'])))[0]
         self.Z_WS = np.array(self.WS_data['Alt'])[0]
         self.Temp_WS = np.array(self.WS_data['Temperature'])[0]
         self.U_WS = (self.WS_data['WindSpeed'] * self.WS_data['WindDirectionX'])[0]
@@ -206,7 +206,7 @@ class ProcessDataBrusselas:
 
         # Grilla PINN
         T_PINN = self.T_WS[0:1, :]
-        R_PINN = 7*6378000 * np.sin(np.radians(R))
+        R_PINN = 6378000 * np.sin(np.radians(R))
         x_PINN = np.arange(x_min - R_PINN, x_max + R_PINN, R_PINN) - (x_min + x_max) / 2
         y_PINN = np.arange(y_min - R_PINN, y_max + R_PINN, R_PINN) - (y_min + y_max) / 2
 
@@ -293,14 +293,19 @@ class ProcessDataBrusselas:
         self.params["WS_val_idx"] = WS_val_idx
 
     def plot_stations(self) -> None:
-        if self._state_data_process:
-            self.X_WS
-            self.val_data
-
-        else:
-            raise ValueError("No se a ejecutado .process_data()")
-
-        ...
+        x_plot = self.X_WS[:,0]
+        y_plot = self.Y_WS[:,0]
+        target = range(self.X_WS.shape[0])
+        plt.figure(figsize=(8, 5))
+        plt.scatter(x_plot, y_plot)
+        # Añadir etiquetas con los números de estación
+        for i, (x, y) in enumerate(zip(x_plot, y_plot)):
+            plt.annotate(str(i), (x, y), xytext=(5, 5), textcoords='offset points', fontsize=9)
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.title('Ubicación de Estaciones')
+        plt.grid(True)
+        plt.show()
 
     def return_data(self):
         if self._state_data_process:
@@ -378,14 +383,13 @@ class ProcessDataColombia:
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
         self.T_WS = self.segundos
-        self.X_WS = np.array(7*6378000 * np.sin(np.radians(self.longitud)))
-        self.Y_WS = np.array(7*6378000 * np.sin(np.radians(self.latitud)))
+        self.X_WS = np.array(6378000 * np.sin(np.radians(self.longitud)))
+        self.Y_WS = np.array(6378000 * np.sin(np.radians(self.latitud)))
         self.Z_WS = np.array(self.altura)
         self.Temp_WS = np.array(self.temperatura)
         self.U_WS = self.vel_u
         self.V_WS = self.vel_v
         self.P_WS = self.presion * 100
-        self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
 
     def _reshape_delete_nans(self) -> None:
         T_nan_index = np.argwhere(pd.isna(self.segundos))
@@ -415,6 +419,8 @@ class ProcessDataColombia:
         self.Z_WS = np.delete(self.Z_WS, X_nan_index[:, 0], 0)
         self.Temp_WS = np.delete(self.Temp_WS, X_nan_index[:, 0], 0)
 
+        self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
+
     def _reshape_data(self, arr: np.ndarray) -> None:
         # Reestructurar matrices: 7 estaciones x mediciones
         return np.reshape(arr, (int(arr.shape[0] / self.numero_estaciones), self.numero_estaciones), order="F").T
@@ -433,6 +439,8 @@ class ProcessDataColombia:
         one_day = 24 * 3600
         seconds_days = one_day * n_days
         seconds_days_args = self.T_WS[0,:] <= seconds_days
+        
+        print(f"---> Se registran {np.nanmax(self.T_WS) // one_day} días de registros")
 
         self.T_WS = self.T_WS[:,seconds_days_args]
         self.X_WS = self.X_WS[:,seconds_days_args]
@@ -485,7 +493,7 @@ class ProcessDataColombia:
 
         # Grilla PINN
         T_PINN = self.T_WS[0:1, :]
-        R_PINN = 7*6378000 * np.sin(np.radians(R))
+        R_PINN = 6378000 * np.sin(np.radians(R))
         x_PINN = np.arange(x_min - R_PINN, x_max + R_PINN, R_PINN) - (x_min + x_max) / 2
         y_PINN = np.arange(y_min - R_PINN, y_max + R_PINN, R_PINN) - (y_min + y_max) / 2
 

@@ -41,6 +41,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     batch_WS = int(np.ceil(len(station_dataset) / params['n_days'] * params['R']))
     batch_PINN = int(np.ceil(len(grid_dataset) / params['n_days'] * params['R']))
     
+    print(f"Size Estaciones: {int(len(station_dataset))}, Size Grilla: {int(len(grid_dataset))}")
     print(f"Batch Size Estaciones: {batch_WS}, Batch Size Grilla: {batch_PINN}")
 
     station_loader = DataLoader(station_dataset, batch_size=batch_WS, shuffle=True, drop_last=True)
@@ -150,7 +151,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         # Guardar historial
         history['loss'].append(avg_loss)
         
-        if epoch % 10 == 0:
+        if epoch % 1 == 0:
             print(f"| Epoch: {epoch:3} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
 
         # Guardado periódico
@@ -299,7 +300,7 @@ def train_pinn_colombia(process_data: ProcessData, model:nn.Module, device:str, 
         history['p_loss'].append(avg_p_loss)
         history['lr'].append(current_lr)
         
-        if epoch % 10 == 0:
+        if epoch % 1 == 0:
             print(f"| Epoch: {epoch:4} | Loss: {avg_loss:.3e} | NS Loss: {avg_ns_loss:.3e} | U Loss: {avg_u_loss:.3e} | V Loss: {avg_v_loss:.3e} | P Loss: {avg_p_loss:.3e} | LR: {current_lr:.1e} |")
 
         # Guardado periódico
