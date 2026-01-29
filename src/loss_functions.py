@@ -47,10 +47,24 @@ def loss_navier_stokes(model, t, x, y):
     
     return mse(e1, zeros) + mse(e2, zeros) + mse(e3, zeros)
 
+def loss_u(model, t, x, y, marker) -> float:
+    outputs = model(t, x, y)
+    u = outputs[:, 0:1]
+    return mse(u, marker)
+
+def loss_v(model, t, x, y, marker) -> float:
+    outputs = model(t, x, y)
+    v = outputs[:, 1:2]
+    return mse(v, marker)
+
+def loss_p(model, t, x, y, marker) -> float:
+    outputs = model(t, x, y)
+    p = outputs[:, 2:3]
+    return mse(p, marker)
+
 def loss_data_variable(pred, target):
     """MSE normalizado por varianza (std^2) del target."""
     mse = nn.MSELoss()
     variance = torch.var(target) if torch.var(target) > 0 else 1.0
     return mse(pred, target) / variance
-
 

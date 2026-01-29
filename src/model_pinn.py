@@ -14,7 +14,8 @@ class GammaBiasLayer(nn.Module):
         self.linear = weight_norm(nn.Linear(in_features, out_features, bias=False))
         
         # Inicialización uniforme [-1, 1] para los pesos
-        nn.init.uniform_(self.linear.weight, -1, 1)
+        # nn.init.uniform_(self.linear.weight, -1, 1)
+        nn.init.xavier_uniform_(self.linear.weight)
         
         # Parámetros entrenables gamma y bias
         self.gamma = nn.Parameter(torch.ones(out_features))
