@@ -18,7 +18,7 @@ mse = nn.MSELoss()
 # Configuración del dispositivo
 
 
-def train_pinn_brusselas(process_data: ProcessData, device:str, lamb:float = 2.0, num_epochs:int = 1000, save_path = Path('PINN_brusselas.pth')):
+def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str, lamb:float = 2.0, num_epochs:int = 1000, save_path = Path('PINN_brusselas.pth')):
     # 1. Cargar datos
     print("Cargando y procesando datos...")
     # Asegúrate de tener el archivo .mat en la carpeta correcta o ajustar el path
@@ -47,7 +47,7 @@ def train_pinn_brusselas(process_data: ProcessData, device:str, lamb:float = 2.0
     grid_loader = DataLoader(grid_dataset, batch_size=batch_PINN, shuffle=True, drop_last=True)
 
     # 3. Inicializar Modelo
-    model = PINN(input_dim=3, output_dim=3, hidden_neurons=600).to(device)
+    model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=5e-4)
     
     # Si la pérdida no baja en 15 épocas, reduce el LR a la mitad - Scheduler robusto (ReduceLROnPlateau).
@@ -124,6 +124,10 @@ def train_pinn_brusselas(process_data: ProcessData, device:str, lamb:float = 2.0
 
         # Promedios
         avg_loss = epoch_loss / batches
+        avg_ns = epoch_ns / batches
+        avg_data_u = epoch_data_u / batches
+        avg_data_v = epoch_data_v / batches
+        avg_data_p = epoch_data_p / batches
         
         # Actualizar el scheduler basado en la pérdida promedio
         scheduler.step(avg_loss)
@@ -147,7 +151,7 @@ def train_pinn_brusselas(process_data: ProcessData, device:str, lamb:float = 2.0
         history['loss'].append(avg_loss)
         
         if epoch % 10 == 0:
-            print(f"Epoch: {epoch} Loss: {avg_loss:.3e} LR: {current_lr:.1e}")
+            print(f"| Epoch: {epoch:3} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
 
         # Guardado periódico
         if (epoch + 1) % num_epochs == 0:
@@ -185,8 +189,8 @@ def train_pinn_colombia(process_data: ProcessData, model:nn.Module, device:str, 
     grid_dataset = CollocationDataset(pinn_grid)
     
     # Cálculos de tamaño de lote (replican lógica original)
-    batch_WS = int(np.ceil(len(station_dataset) / params['n_days']))
-    batch_PINN = int(np.ceil(len(grid_dataset) / params['n_days']))
+    batch_WS = int(np.ceil(len(station_dataset) / params['n_days'] * params["R"]))
+    batch_PINN = int(np.ceil(len(grid_dataset) / params['n_days'] * params["R"]))
     
     print(f"Batch Size Estaciones: {batch_WS}, Batch Size Grilla: {batch_PINN}")
 
@@ -239,12 +243,13 @@ def train_pinn_colombia(process_data: ProcessData, model:nn.Module, device:str, 
             batch_loss_u = loss_u(model, t_u, x_u, y_u, u_u)
             batch_loss_v = loss_v(model, t_v, x_v, y_v, v_v)
             batch_loss_p = loss_p(model, t_p, x_p, y_p, p_p)
-            batch_loss_data = (batch_loss_u + batch_loss_v + batch_loss_p) / 3.0
+            batch_loss_data = batch_loss_u + batch_loss_v + batch_loss_p
             
             batch_loss_ns_grid = loss_navier_stokes(model, t_eqns, x_eqns, y_eqns)
             batch_loss_ns_data = loss_navier_stokes(model, t_eqns_ref, x_eqns_ref, y_eqns_ref)
-            batch_loss_ns = 0.4*batch_loss_ns_grid + 0.6*batch_loss_ns_data
-            batch_loss = (batch_loss_data**2 + lamb * batch_loss_ns**2) / (batch_loss_data + lamb * batch_loss_ns)
+            batch_loss_ns = batch_loss_ns_grid + batch_loss_ns_data
+            batch_loss = batch_loss_data + lamb * batch_loss_ns
+            # batch_loss = (batch_loss_data**2 + lamb * batch_loss_ns**2) / (batch_loss_data + lamb * batch_loss_ns)
             
             batch_loss.backward()
             # CAMBIO 4: Gradient Clipping

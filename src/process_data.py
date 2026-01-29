@@ -69,7 +69,8 @@ class ProcessDataBrusselas:
         print("--- OK ---")
 
         print("--- Centrado y creación de la malla ---")
-        self._centered_grid_adimensionalization()
+        centered_kwargs = {k: v for k, v in kwargs.items() if k in ['R']}
+        self._centered_grid_adimensionalization(**centered_kwargs)
         print("--- OK ---")
 
         print("--- Separar entre validación y entrenamiento ---")
@@ -103,8 +104,8 @@ class ProcessDataBrusselas:
 
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
-        self.X_WS = np.array(6378000 * np.sin(np.radians(self.WS_data['Lon'])))[0]
-        self.Y_WS = np.array(6378000 * np.sin(np.radians(self.WS_data['Lat'])))[0]
+        self.X_WS = np.array(7*6378000 * np.sin(np.radians(self.WS_data['Lon'])))[0]
+        self.Y_WS = np.array(7*6378000 * np.sin(np.radians(self.WS_data['Lat'])))[0]
         self.Z_WS = np.array(self.WS_data['Alt'])[0]
         self.Temp_WS = np.array(self.WS_data['Temperature'])[0]
         self.U_WS = (self.WS_data['WindSpeed'] * self.WS_data['WindDirectionX'])[0]
@@ -193,7 +194,7 @@ class ProcessDataBrusselas:
             self.P_WS[:, snap] = self.P_WS[idx_sort, snap]
             self.Temp_WS[:, snap] = self.Temp_WS[idx_sort, snap]
 
-    def _centered_grid_adimensionalization(self) -> None:
+    def _centered_grid_adimensionalization(self, R:float = 0.2) -> None:
         # Centrado
         x_min, x_max = np.min(self.X_WS), np.max(self.X_WS)
         y_min, y_max = np.min(self.Y_WS), np.max(self.Y_WS)
@@ -205,8 +206,7 @@ class ProcessDataBrusselas:
 
         # Grilla PINN
         T_PINN = self.T_WS[0:1, :]
-        R = 0.2 # Grados
-        R_PINN = 6378000 * np.sin(np.radians(R))
+        R_PINN = 7*6378000 * np.sin(np.radians(R))
         x_PINN = np.arange(x_min - R_PINN, x_max + R_PINN, R_PINN) - (x_min + x_max) / 2
         y_PINN = np.arange(y_min - R_PINN, y_max + R_PINN, R_PINN) - (y_min + y_max) / 2
 
@@ -249,6 +249,14 @@ class ProcessDataBrusselas:
         self.params['Re'] = Re
         self.params['dim_T_PINN'] = dim_T_PINN
         self.params['R'] = R
+
+        print(f"#\t{self.X_PINN.shape=} , {self.Y_PINN.shape=}\t#")
+        print(f"#\t{np.nanmin(self.T_WS)=:.3e} , {np.nanmax(self.T_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.P_WS)=:.3e} , {np.nanmax(self.P_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.U_WS)=:.3e} , {np.nanmax(self.U_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.V_WS)=:.3e} , {np.nanmax(self.V_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.X_WS)=:.3e} , {np.nanmax(self.X_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.Y_WS)=:.3e} , {np.nanmax(self.Y_WS)=:.3e}\t#")
 
     def _split_validation_train(self,
                                 WS_val_idx: np.ndarray = np.sort(np.random.choice(21, 13, replace=False))) -> None:
@@ -370,8 +378,8 @@ class ProcessDataColombia:
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
         self.T_WS = self.segundos
-        self.X_WS = np.array(6378000 * np.sin(np.radians(self.longitud)))
-        self.Y_WS = np.array(6378000 * np.sin(np.radians(self.latitud)))
+        self.X_WS = np.array(7*6378000 * np.sin(np.radians(self.longitud)))
+        self.Y_WS = np.array(7*6378000 * np.sin(np.radians(self.latitud)))
         self.Z_WS = np.array(self.altura)
         self.Temp_WS = np.array(self.temperatura)
         self.U_WS = self.vel_u
@@ -477,7 +485,7 @@ class ProcessDataColombia:
 
         # Grilla PINN
         T_PINN = self.T_WS[0:1, :]
-        R_PINN = 6378000 * np.sin(np.radians(R))
+        R_PINN = 7*6378000 * np.sin(np.radians(R))
         x_PINN = np.arange(x_min - R_PINN, x_max + R_PINN, R_PINN) - (x_min + x_max) / 2
         y_PINN = np.arange(y_min - R_PINN, y_max + R_PINN, R_PINN) - (y_min + y_max) / 2
 
@@ -520,13 +528,13 @@ class ProcessDataColombia:
         self.params['dim_T_PINN'] = dim_T_PINN
         self.params['R'] = R
 
-        print(f"{self.X_PINN.shape=} , {self.Y_PINN.shape=}")
-        print(f"{np.nanmin(self.T_WS)=} , {np.nanmax(self.T_WS)=}")
-        print(f"{np.nanmin(self.P_WS)=} , {np.nanmax(self.P_WS)=}")
-        print(f"{np.nanmin(self.U_WS)=} , {np.nanmax(self.U_WS)=}")
-        print(f"{np.nanmin(self.V_WS)=} , {np.nanmax(self.V_WS)=}")
-        print(f"{np.nanmin(self.X_WS)=} , {np.nanmax(self.X_WS)=}")
-        print(f"{np.nanmin(self.Y_WS)=} , {np.nanmax(self.Y_WS)=}")
+        print(f"#\t{self.X_PINN.shape=} , {self.Y_PINN.shape=}\t#")
+        print(f"#\t{np.nanmin(self.T_WS)=:.3e} , {np.nanmax(self.T_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.P_WS)=:.3e} , {np.nanmax(self.P_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.U_WS)=:.3e} , {np.nanmax(self.U_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.V_WS)=:.3e} , {np.nanmax(self.V_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.X_WS)=:.3e} , {np.nanmax(self.X_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.Y_WS)=:.3e} , {np.nanmax(self.Y_WS)=:.3e}\t#")
 
     def _split_validation_train(self,
                                 WS_val_idx: np.ndarray = np.sort(np.random.choice(7, 3, replace=False))) -> None:
