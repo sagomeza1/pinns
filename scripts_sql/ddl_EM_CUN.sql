@@ -1,4 +1,4 @@
-use EM_CUNBOY;
+use EM_BOG;
 go
 
 -- Se eliminan las tablas previamente creadas
