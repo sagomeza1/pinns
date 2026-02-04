@@ -250,13 +250,13 @@ class ProcessDataBrusselas:
         self.params['dim_T_PINN'] = dim_T_PINN
         self.params['R'] = R
 
-        print(f"#\t{self.X_PINN.shape=} , {self.Y_PINN.shape=}\t#")
-        print(f"#\t{np.nanmin(self.T_WS)=:.3e} , {np.nanmax(self.T_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.P_WS)=:.3e} , {np.nanmax(self.P_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.U_WS)=:.3e} , {np.nanmax(self.U_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.V_WS)=:.3e} , {np.nanmax(self.V_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.X_WS)=:.3e} , {np.nanmax(self.X_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.Y_WS)=:.3e} , {np.nanmax(self.Y_WS)=:.3e}\t#")
+        print(f"#\t{self.X_PINN.shape=}\t{self.Y_PINN.shape=}\t#")
+        print(f"#\t{np.nanmin(self.T_WS)=:.3e}\t{np.nanmax(self.T_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.P_WS)=:.3e}\t{np.nanmax(self.P_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.U_WS)=:.3e}\t{np.nanmax(self.U_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.V_WS)=:.3e}\t{np.nanmax(self.V_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.X_WS)=:.3e}\t{np.nanmax(self.X_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.Y_WS)=:.3e}\t{np.nanmax(self.Y_WS)=:.3e}\t#")
 
     def _split_validation_train(self,
                                 WS_val_idx: np.ndarray = np.sort(np.random.choice(21, 13, replace=False))) -> None:
@@ -419,7 +419,7 @@ class ProcessDataColombia:
         self.Z_WS = np.delete(self.Z_WS, X_nan_index[:, 0], 0)
         self.Temp_WS = np.delete(self.Temp_WS, X_nan_index[:, 0], 0)
 
-        self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
+        # self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
 
     def _reshape_data(self, arr: np.ndarray) -> None:
         # Reestructurar matrices: 7 estaciones x mediciones
@@ -536,13 +536,13 @@ class ProcessDataColombia:
         self.params['dim_T_PINN'] = dim_T_PINN
         self.params['R'] = R
 
-        print(f"#\t{self.X_PINN.shape=} , {self.Y_PINN.shape=}\t#")
-        print(f"#\t{np.nanmin(self.T_WS)=:.3e} , {np.nanmax(self.T_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.P_WS)=:.3e} , {np.nanmax(self.P_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.U_WS)=:.3e} , {np.nanmax(self.U_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.V_WS)=:.3e} , {np.nanmax(self.V_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.X_WS)=:.3e} , {np.nanmax(self.X_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.Y_WS)=:.3e} , {np.nanmax(self.Y_WS)=:.3e}\t#")
+        print(f"#\t{self.X_PINN.shape=}\t{self.Y_PINN.shape=}\t#")
+        print(f"#\t{np.nanmin(self.T_WS)=:.3e}\t{np.nanmax(self.T_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.P_WS)=:.3e}\t{np.nanmax(self.P_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.U_WS)=:.3e}\t{np.nanmax(self.U_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.V_WS)=:.3e}\t{np.nanmax(self.V_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.X_WS)=:.3e}\t{np.nanmax(self.X_WS)=:.3e}\t#")
+        print(f"#\t{np.nanmin(self.Y_WS)=:.3e}\t{np.nanmax(self.Y_WS)=:.3e}\t#")
 
     def _split_validation_train(self,
                                 WS_val_idx: np.ndarray = np.sort(np.random.choice(7, 3, replace=False))) -> None:
