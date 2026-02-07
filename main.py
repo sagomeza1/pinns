@@ -15,6 +15,7 @@ def main():
     
     data_path = Path().cwd() / "data" / "raw" / "em_cundinamarca_boyaca_251201_251231_11ws.parquet"
     data_path = Path().cwd() / "data" / "raw" / "weather_data.mat"
+    data_path = Path().cwd() / "data" / "raw" / "weather_data.parquet"
     data_path = Path().cwd() / "data" / "raw" / "em_cundinamarca_boyaca_251201_251231_11ws_interpo.parquet"
     
     save_path = Path().cwd() / "models" / f"PINN_cunboy_epchos_{num_epochs}_lamb_{lamb}.pth"

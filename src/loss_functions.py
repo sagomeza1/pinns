@@ -69,5 +69,6 @@ def loss_data_variable(pred, target):
     """MSE normalizado por varianza (std^2) del target."""
     mse = nn.MSELoss()
     variance = torch.var(target) if torch.var(target) > 0 else 1.0
-    return mse(pred, target) / variance
+    return mse(pred, target)
+    # return mse(pred, target) / variance
 

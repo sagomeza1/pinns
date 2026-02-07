@@ -40,7 +40,7 @@ class ProcessDataBrusselas:
             raise FileNotFoundError(f"No se encontró el archivo: {self.filepath}")
         print(f"Iniciando carga de {self.filepath}")
         t0 = datetime.now()
-        self.WS_data = sio.loadmat(self.filepath)
+        self.WS_data = pd.read_parquet(self.filepath, engine="fastparquet")
         self._tiempo_de_carga = datetime.now() - t0
 
     def process_data(self, **kwargs) -> None:
@@ -83,34 +83,25 @@ class ProcessDataBrusselas:
 
     def _process_time(self) -> None:
         # Conversión de fecha a tiempo continuo (segundos)
-        date_0 = self.WS_data['Date'][0]
-        date = []
-        for i in range(len(date_0)):
-            date = np.append(date, str(date_0[i])[2:-2])
-
+        date = self.WS_data['Date']
+        time_init = self.WS_data['Date'].min()
         # Manejo inicial de NaNs en fechas
-        time_init = dt.datetime(int(date[0][0:4]), int(date[0][5:7]), int(date[0][8:10]),
-                                int(date[0][11:13]), int(date[0][14:16]))
         self._T_nan_index = np.argwhere(pd.isna(date))
         date = np.delete(date, self._T_nan_index[:, 0], 0)
 
-        Seconds = np.zeros((date.shape[0], 1))
-        for index in range(date.shape[0]):
-            d = dt.datetime(int(date[index][0:4]), int(date[index][5:7]), int(date[index][8:10]),
-                            int(date[index][11:13]), int(date[index][14:16]))
-            Seconds[index, 0] = (d - time_init).total_seconds()
+        Seconds = (self.WS_data['Date'] - time_init)  / np.timedelta64(1, 's')
 
         self.T_WS = Seconds
 
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
-        self.X_WS = np.array(6378000 * np.sin(np.radians(self.WS_data['Lon'])))[0]
-        self.Y_WS = np.array(6378000 * np.sin(np.radians(self.WS_data['Lat'])))[0]
-        self.Z_WS = np.array(self.WS_data['Alt'])[0]
-        self.Temp_WS = np.array(self.WS_data['Temperature'])[0]
-        self.U_WS = (self.WS_data['WindSpeed'] * self.WS_data['WindDirectionX'])[0]
-        self.V_WS = (self.WS_data['WindSpeed'] * self.WS_data['WindDirectionY'])[0]
-        self.P_WS = self.WS_data['Pressure'][0] * 100 # mbar a Pa
+        self.X_WS = np.array(6378000 * np.sin(np.radians(self.WS_data['Lon'])))
+        self.Y_WS = np.array(6378000 * np.sin(np.radians(self.WS_data['Lat'])))
+        self.Z_WS = np.array(self.WS_data['Alt'])
+        self.Temp_WS = np.array(self.WS_data['Temperature'])
+        self.U_WS = (self.WS_data['WindSpeed'] * self.WS_data['WindDirectionX'])
+        self.V_WS = (self.WS_data['WindSpeed'] * self.WS_data['WindDirectionY'])
+        self.P_WS = self.WS_data['Pressure'] * 100 # mbar a Pa
 
     def _delete_nans(self) -> None:
         # Eliminar NaNs de campos temporales
@@ -336,20 +327,20 @@ class ProcessDataColombia:
             raise FileNotFoundError(f"No se encontró el archivo: {self.filepath}")
         print(f"Iniciando carga de {self.filepath}")
         t0 = datetime.now()
-        wsdata = pd.read_parquet(self.filepath, engine="fastparquet")
+        self.wsdata = pd.read_parquet(self.filepath, engine="fastparquet")
         self._tiempo_de_carga = datetime.now() - t0
         # print(f"Documento cargado en {self._tiempo_de_carga:.2e} s.")
         print(f"Documento cargado en {self._tiempo_de_carga} s.")
-        self.codigo_estacion = wsdata["codigo_estacion"]
-        self.latitud = wsdata["latitud"]
-        self.longitud = wsdata["longitud"]
-        self.altura = wsdata["altura"]
-        self.segundos = wsdata["segundos"]
-        self.presion = wsdata["presion"]
-        self.vel_u = wsdata["vel_u"]
-        self.vel_v = wsdata["vel_v"]
-        self.temperatura = wsdata["temperatura"]
-        self.numero_estaciones = wsdata['codigo_estacion'].nunique()
+        self.codigo_estacion = self.wsdata["codigo_estacion"]
+        self.latitud = self.wsdata["latitud"]
+        self.longitud = self.wsdata["longitud"]
+        self.altura = self.wsdata["altura"]
+        self.segundos = self.wsdata["segundos"]
+        self.presion = self.wsdata["presion"]
+        self.vel_u = self.wsdata["vel_u"]
+        self.vel_v = self.wsdata["vel_v"]
+        self.temperatura = self.wsdata["temperatura"]
+        self.numero_estaciones = self.wsdata['codigo_estacion'].nunique()
 
     def process_data(self, **kwargs) -> None:
 
@@ -419,7 +410,7 @@ class ProcessDataColombia:
         self.Z_WS = np.delete(self.Z_WS, X_nan_index[:, 0], 0)
         self.Temp_WS = np.delete(self.Temp_WS, X_nan_index[:, 0], 0)
 
-        # self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
+        self.P_WS = self.P_WS * (1 - 0.8422 * self.Z_WS / (self.Temp_WS + 273.15 + 0.8422 * self.Z_WS))**(2.622)
 
     def _reshape_data(self, arr: np.ndarray) -> None:
         # Reestructurar matrices: 7 estaciones x mediciones
