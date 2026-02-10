@@ -8,8 +8,8 @@ from src.process_data import ProcessDataBrusselas , ProcessDataColombia
 
 def main():
     
-    num_epochs = 30
-    lamb = 0.0001
+    num_epochs = 2000
+    lamb = 2
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Usando dispositivo: {device}")
     
@@ -17,8 +17,9 @@ def main():
     data_path = Path().cwd() / "data" / "raw" / "weather_data.mat"
     data_path = Path().cwd() / "data" / "raw" / "weather_data.parquet"
     data_path = Path().cwd() / "data" / "raw" / "em_cundinamarca_boyaca_251201_251231_11ws_interpo.parquet"
+    data_path = Path().cwd() / "data" / "raw" / "em_caribe_251201_251231_22ws_interpo.parquet"
     
-    save_path = Path().cwd() / "models" / f"PINN_cunboy_epchos_{num_epochs}_lamb_{lamb}.pth"
+    save_path = Path().cwd() / "models" / f"PINN_car_epchos_{num_epochs}_lamb_{lamb}.pth"
     
     model = PINN(input_dim=3, output_dim=3, hidden_neurons=600)
     # print(model)
