@@ -98,14 +98,16 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             loss_v = loss_data_variable(v_pred, v_true)
             loss_p = loss_data_variable(p_pred, p_true)
             
-            loss_data = loss_u + loss_v + loss_p
+            # loss_data = loss_u + loss_v + loss_p
 
             # 3. Pérdida Total (Suma ponderada compleja del original)
             # El original usa: (NS^2 + Data^2) / Sum(Losses). 
             # Esto es inusual, es una especie de normalización dinámica. Replicamos:
-            total_sum = loss_physics + loss_data
+            # total_sum = loss_physics + loss_data
             # final_loss = (loss_physics**2 + loss_u**2 + loss_v**2 + loss_p**2) / total_sum
-            final_loss = total_sum
+            
+            # final_loss = total_sum
+            final_loss = (loss_physics**2 + loss_u**2 + loss_v**2 + loss_p**2) / (loss_physics + loss_u + loss_v + loss_p)
 
             final_loss.backward()
             
@@ -151,7 +153,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         # Guardar historial
         history['loss'].append(avg_loss)
         
-        if epoch % 1 == 0:
+        if epoch % 10 == 0:
             print(f"| Epoch: {epoch:3} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
 
         # Guardado periódico

@@ -358,6 +358,11 @@ class ProcessDataColombia:
         self._filter_by_time_and_sort_by_coor(**filter_kwargs)
         print("--- OK ---")
 
+        print("--- Corrección de presión a nivel del mar (ISA) ---")
+        # Corrección de presión a nivel del mar (ISA)
+        self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
+        print("--- OK ---")
+
         print("--- Centrado y creación de la malla ---")
         centered_kwargs = {k: v for k, v in kwargs.items() if k in ['R', 'rho', 'nu']}
         self._centered_grid_adimensionalization(**centered_kwargs)
@@ -410,7 +415,6 @@ class ProcessDataColombia:
         self.Z_WS = np.delete(self.Z_WS, X_nan_index[:, 0], 0)
         self.Temp_WS = np.delete(self.Temp_WS, X_nan_index[:, 0], 0)
 
-        self.P_WS = self.P_WS * (1 - 0.8422 * self.Z_WS / (self.Temp_WS + 273.15 + 0.8422 * self.Z_WS))**(2.622)
 
     def _reshape_data(self, arr: np.ndarray) -> None:
         # Reestructurar matrices: 7 estaciones x mediciones
