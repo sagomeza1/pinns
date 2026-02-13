@@ -49,7 +49,8 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
 
     # 3. Inicializar Modelo
     model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=5e-4)
+    optimizer = optim.NAdam(model.parameters(), lr=5e-4)
+    # optimizer = optim.Adam(model.parameters(), lr=5e-4)
     
     # Si la pérdida no baja en 15 épocas, reduce el LR a la mitad - Scheduler robusto (ReduceLROnPlateau).
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=15)
@@ -152,9 +153,13 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
 
         # Guardar historial
         history['loss'].append(avg_loss)
+        history['ns_loss'].append(avg_ns)
+        history['p_loss'].append(loss_u)
+        history['u_loss'].append(loss_v)
+        history['v_loss'].append(loss_p)
         
         if epoch % 10 == 0:
-            print(f"| Epoch: {epoch:3} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
+            print(f"| Epoch: {epoch:4} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
 
         # Guardado periódico
         if (epoch + 1) % num_epochs == 0:
@@ -170,6 +175,8 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             # similar al bloque 'Save Data' del original, usando model.eval()
 
     print("Proceso completado.")
+    
+    return history
     
     
 def train_pinn_colombia(process_data: ProcessData, model:nn.Module, device:str, lamb:float = 2.0, num_epochs:int = 1000, save_path = Path('PINN_Colombia.pth')):
