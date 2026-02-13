@@ -182,6 +182,11 @@ class DataPreprocessor:
             clean_full_stations = self._filter_stations(clean_full_stations, **filter_params)
             print(f"{' OK':.>5}")
 
+            # Complerar nans
+            print(f"{'Homogenizar registros ':.<45}", end="")
+            clean_full_stations = self._complete_nans(clean_full_stations)
+            print(f"{' OK':.>5}")
+
             # Interpolación
             if self.interpolate:
                 print(f"{'Interpolación ':.<45}", end="")
@@ -293,15 +298,18 @@ class DataPreprocessor:
         return df
         ...
 
-    def _filter_stations(self, df:pd.DataFrame, min_pressure:Optional[int] = None, max_altitude: Optional[int] = None) -> pd.DataFrame:
+    def _filter_stations(self, df:pd.DataFrame, min_pressure:Optional[int] = None, max_altitude: Optional[int] = None, seconds: int = 3600) -> pd.DataFrame:
         if min_pressure:
             df = df[df["presion"] > min_pressure]
         if max_altitude:
             df = df[df["altura"] < max_altitude]
+        
+        df = df[df["segundos"] % seconds == 0]
+        
         return df
         ...
 
-    def _interpolate_data(self, df:pd.DataFrame, minutes_interval:int = 20):
+    def _interpolate_data(self, df:pd.DataFrame, minutes_interval:int = 20) -> pd.DataFrame:
         seconds_interval = 60 * minutes_interval
         high_seconds = df["segundos"].max()
         interpolated_seconds = np.arange(0, high_seconds + seconds_interval, seconds_interval)
@@ -355,6 +363,16 @@ class DataPreprocessor:
             interpolated_data_dict["codigo_estacion"] = np.concat([interpolated_data_dict["codigo_estacion"], station_id])
             
         return pd.DataFrame(interpolated_data_dict)
+
+    def _complete_nans(self, df:pd.DataFrame) -> pd.DataFrame:
+        segundos = df["segundos"].unique()
+        estaciones = df["codigo_estacion"].unique()
+        
+        segundos , estaciones = np.meshgrid(segundos, estaciones)
+        
+        df_temp = pd.DataFrame({"codigo_estacion": estaciones.flatten(), "segundos": segundos.flatten()})
+        
+        return pd.merge(df_temp, df, "left", ["codigo_estacion", "segundos"])
 
     def export_data(self, save_file_path:Path, **kwargs) -> None:
         print("=" * 50)
