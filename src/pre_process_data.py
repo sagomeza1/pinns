@@ -73,6 +73,8 @@ class DataPreprocessor:
         self.engine: Optional[Engine] = self._create_sql_engine()
         self.full_stations_data: Optional[pd.DataFrame] = None
         self.coor_stations_data: Optional[pd.DataFrame] = None
+        self.clean_full_stations: Optional[pd.DataFrame] = None
+        self.inter_full_stations: Optional[pd.DataFrame] = None
         self.global_config = kwargs
 
     def _create_sql_engine(self) -> Engine:
@@ -149,74 +151,52 @@ class DataPreprocessor:
         full_stations = self.full_stations_data.copy()
         coor_stations = self.coor_stations_data.copy()
 
-        # Limpieza de los datos
-        print(f"{'Limpieza de los datos ':.<45}", end="")
         try:
+            # Limpieza de los datos
+            print(f"{'Limpieza de los datos ':.<45}", end="")
             clean_params = self._filter_kwargs_for_function(self._clean_dataframe, **self.global_config)
             clean_full_stations = self._clean_dataframe(full_stations, **clean_params)
-        except Exception as e:
-            print(f"ERROR")
-            print(f"Error: {e}")
-            return None
-        print(f"{' OK':.>5}")
-
-        # Adición de la altura
-        print(f"{'Adición de la altura ':.<45}", end="")
-        try:
-            alt_params = self._filter_kwargs_for_function(self._get_station_alts, **self.global_config)
-            clean_full_stations = self._get_station_alts(clean_full_stations, **alt_params)
-        except Exception as e:
-            print(f"ERROR")
-            print(f"Error: {e}")
-            return None
-        print(f"{' OK':.>5}")
-
-        # Eliminación de duplicados
-        print(f"{'Eliminación de duplicados ':.<45}", end="")
-        try:
-            clean_full_stations.drop_duplicates(inplace=True)
-            clean_full_stations.reset_index(drop=True, inplace=True)
-        except Exception as e:
-            print(f"ERROR")
-            print(f"Error: {e}")
-            return None
-        print(f"{' OK':.>5}")
-
-        # Segundos, componentes X y Y de velocidad
-        print(f"{'Segundos, Velocidad U, Velocidad V ':.<45}", end="")
-        try:
-            clean_full_stations = self._time_to_seconds(clean_full_stations)
-            clean_full_stations = self._vel_u_and_vel_v(clean_full_stations)
-        except Exception as e:
-            print(f"ERROR")
-            print(f"Error: {e}")
-            return None
-        print(f"{' OK':.>5}")
-
-        # Filtro por condiciones
-        print(f"{'Filtro de estaciones ':.<45}", end="")
-        try:
-            filter_params = self._filter_kwargs_for_function(self._filter_stations, **self.global_config)
-            clean_full_stations = self._filter_stations(clean_full_stations, **filter_params)
-        except Exception as e:
-            print(f"ERROR")
-            print(f"Error: {e}")
-            return None
-        print(f"{' OK':.>5}")
-
-        # Interpolación
-        if self.interpolate:
-            print(f"{'Interpolación ':.<45}", end="")
-            try:
-                filter_params = self._filter_kwargs_for_function(self._filter_stations, **self.global_config)
-                clean_full_stations = self._filter_stations(clean_full_stations, **filter_params)
-            except Exception as e:
-                print(f"ERROR")
-                print(f"Error: {e}")
-                return None
             print(f"{' OK':.>5}")
 
-        return clean_full_stations
+            # Adición de la altura
+            print(f"{'Adición de la altura ':.<45}", end="")
+            alt_params = self._filter_kwargs_for_function(self._get_station_alts, **self.global_config)
+            clean_full_stations = self._get_station_alts(clean_full_stations, **alt_params)
+            print(f"{' OK':.>5}")
+
+            # Eliminación de duplicados
+            print(f"{'Eliminación de duplicados ':.<45}", end="")
+            clean_full_stations.drop_duplicates(inplace=True)
+            clean_full_stations.reset_index(drop=True, inplace=True)
+            print(f"{' OK':.>5}")
+
+            # Segundos, componentes X y Y de velocidad
+            print(f"{'Segundos, Velocidad U, Velocidad V ':.<45}", end="")
+            clean_full_stations = self._time_to_seconds(clean_full_stations)
+            clean_full_stations = self._vel_u_and_vel_v(clean_full_stations)
+            print(f"{' OK':.>5}")
+
+            # Filtro por condiciones
+            print(f"{'Filtro de estaciones ':.<45}", end="")
+            filter_params = self._filter_kwargs_for_function(self._filter_stations, **self.global_config)
+            clean_full_stations = self._filter_stations(clean_full_stations, **filter_params)
+            print(f"{' OK':.>5}")
+
+            # Interpolación
+            if self.interpolate:
+                print(f"{'Interpolación ':.<45}", end="")
+                inter_params = self._filter_kwargs_for_function(self._filter_stations, **self.global_config)
+                inter_full_stations = self._filter_stations(clean_full_stations, **inter_params)
+                self.inter_full_stations = inter_full_stations
+                print(f"{' OK':.>5}")
+
+        except Exception as e:
+            print(f"ERROR")
+            print(f"Error: {e}")
+            return None
+
+        self.clean_full_stations = clean_full_stations
+        print("=" * 50)
 
     def _clean_dataframe(self, df:pd.DataFrame, criteria: FilterStrategy) -> pd.DataFrame:
         """
@@ -287,12 +267,9 @@ class DataPreprocessor:
         url = "https://api.open-elevation.com/api/v1/lookup"
         payload = {"locations": points}
 
-        try:
-            response = requests.post(url, json=payload, timeout=20)
-            if response.status_code == 200:
-                return response.json()['results']
-        except Exception as e:
-            print(f"Error al consultar la API: {e}")
+        response = requests.post(url, json=payload, timeout=20)
+        if response.status_code == 200:
+            return response.json()['results']
         return None
         ...
 
@@ -324,6 +301,80 @@ class DataPreprocessor:
         return df
         ...
 
+    def _interpolate_data(self, df:pd.DataFrame, minutes_interval:int = 20):
+        seconds_interval = 60 * minutes_interval
+        high_seconds = df["segundos"].max()
+        interpolated_seconds = np.arange(0, high_seconds + seconds_interval, seconds_interval)
+
+        interpolated_data_dict = dict()
+        interpolated_data_dict["codigo_estacion"] = np.array([])
+        interpolated_data_dict["segundos"] = np.array([])
+        interpolated_data_dict["presion"] = np.array([])
+        interpolated_data_dict["vel_u"] = np.array([])
+        interpolated_data_dict["vel_v"] = np.array([])
+        interpolated_data_dict["temperatura"] = np.array([])
+        interpolated_data_dict["latitud"] = np.array([])
+        interpolated_data_dict["longitud"] = np.array([])
+        interpolated_data_dict["altura"] = np.array([])
+
+        station_ids = df["codigo_estacion"].unique()
+        for station_id in station_ids:
+            seconds = df.loc[df["codigo_estacion"] == station_id, "segundos"]
+            pressure = df.loc[df["codigo_estacion"] == station_id, "presion"]
+            vel_u = df.loc[df["codigo_estacion"] == station_id, "vel_u"]
+            vel_v = df.loc[df["codigo_estacion"] == station_id, "vel_v"]
+            temperature = df.loc[df["codigo_estacion"] == station_id, "temperatura"]
+
+            latitude = df.loc[df["codigo_estacion"] == station_id, "latitud"]
+            longitude = df.loc[df["codigo_estacion"] == station_id, "longitud"]
+            altitude = df.loc[df["codigo_estacion"] == station_id, "altura"]
+
+            latitude = np.tile(latitude.values[0], len(interpolated_seconds))
+            longitude = np.tile(longitude.values[0], len(interpolated_seconds))
+            altitude = np.tile(altitude.values[0], len(interpolated_seconds))
+            station_id = np.tile(station_id, len(interpolated_seconds))
+
+            p_cubic = interp1d(seconds, pressure, kind="cubic")
+            u_cubic = interp1d(seconds, vel_u, kind="cubic")
+            v_cubic = interp1d(seconds, vel_v, kind="cubic")
+            t_cubic = interp1d(seconds, temperature, kind="cubic")
+
+            interpoled_p = p_cubic(interpolated_seconds)
+            interpoled_u = u_cubic(interpolated_seconds)
+            interpoled_v = v_cubic(interpolated_seconds)
+            interpoled_t = t_cubic(interpolated_seconds)
+
+            interpolated_data_dict["segundos"] = np.concat([interpolated_data_dict["segundos"], interpolated_seconds])
+            interpolated_data_dict["presion"] = np.concat([interpolated_data_dict["presion"], interpoled_p])
+            interpolated_data_dict["vel_u"] = np.concat([interpolated_data_dict["vel_u"], interpoled_u])
+            interpolated_data_dict["vel_v"] = np.concat([interpolated_data_dict["vel_v"], interpoled_v])
+            interpolated_data_dict["temperatura"] = np.concat([interpolated_data_dict["temperatura"], interpoled_t])
+            interpolated_data_dict["latitud"] = np.concat([interpolated_data_dict["latitud"], latitude])
+            interpolated_data_dict["longitud"] = np.concat([interpolated_data_dict["longitud"], longitude])
+            interpolated_data_dict["altura"] = np.concat([interpolated_data_dict["altura"], altitude])
+            interpolated_data_dict["codigo_estacion"] = np.concat([interpolated_data_dict["codigo_estacion"], station_id])
+            
+        return pd.DataFrame(interpolated_data_dict)
+
+    def export_data(self, save_file_path:Path, **kwargs) -> None:
+        print("=" * 50)
+        print(f"{'Iniciando Procesamiento de los datos':^50}")
+        try:
+            print(f"{'Exportando registro de las estaciones ':.<45}", end="")
+            self.clean_full_stations.to_parquet(save_file_path, engine="fastparquet")
+            print(f"{' OK':.>5}")
+            
+            if self.interpolate:
+                print(f"{'Exportando registros interpolados ':.<45}", end="")
+                save_interpolate_file_path = save_file_path.with_name(f"{save_file_path.stem}_interpolate{save_file_path.suffix}")
+                self.inter_full_stations.to_parquet(save_interpolate_file_path, engine="fastparquet")
+                print(f"{' OK':.>5}")
+        except Exception as e:
+            print("ERROR")
+            print(f"Error: {e}")
+            return None
+        print("=" * 50)
+
     def time_diff(self) -> None:
         print("Diferencias registradas entre las fechas:")
         for diff in self.full_stations_data["fecha_observacion"].sort_values().diff().unique(): print(f"> {diff}")
@@ -333,6 +384,7 @@ class DataPreprocessor:
 
 # %%
 def main():
+    DIR_DATA_PATH = Path('c:/Users/User/Documents/pinns/data/raw')
     # Configuración de los parámetros de conexión
     def filter_by_min_rows(metrics: StationMetrics) -> bool:
         return metrics.row_count >= 700
@@ -340,15 +392,19 @@ def main():
     kwargs = {
         'server'        : 'localhost\\SQLEXPRESS',
         'database'      : 'EM_CAR',
-        'interpolate'   : False,
+        'interpolate'   : True,
         'criteria'      : filter_by_min_rows,
         'min_pressure'  : 800,
         'max_altitude'  : 1000,
+        'save_file_path': DIR_DATA_PATH / "em_caribe_20251201_20251231.parquet"
     }
-
     preprocess = DataPreprocessor(**kwargs)
     preprocess.load_data()
     preprocess.process_data()
+    preprocess.export_data(**kwargs)
     ...
 if __name__=="__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nProceso interrumpido manualmente")
