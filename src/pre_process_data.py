@@ -367,10 +367,13 @@ class DataPreprocessor:
     def _complete_nans(self, df:pd.DataFrame) -> pd.DataFrame:
         segundos = df["segundos"].unique()
         estaciones = df["codigo_estacion"].unique()
+        coor = df[["codigo_estacion", "latitud", "longitud"]].drop_duplicates()
         
         segundos , estaciones = np.meshgrid(segundos, estaciones)
         
         df_temp = pd.DataFrame({"codigo_estacion": estaciones.flatten(), "segundos": segundos.flatten()})
+        df_temp["latitud"] = df_temp["codigo_estacion"].map(dict(zip(coor["codigo_estacion"], coor["latitud"])))
+        df_temp["longitud"] = df_temp["codigo_estacion"].map(dict(zip(coor["codigo_estacion"], coor["longitud"])))
         
         return pd.merge(df_temp, df, "left", ["codigo_estacion", "segundos"])
 
