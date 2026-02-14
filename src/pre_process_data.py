@@ -375,7 +375,7 @@ class DataPreprocessor:
         df_temp["latitud"] = df_temp["codigo_estacion"].map(dict(zip(coor["codigo_estacion"], coor["latitud"])))
         df_temp["longitud"] = df_temp["codigo_estacion"].map(dict(zip(coor["codigo_estacion"], coor["longitud"])))
         
-        return pd.merge(df_temp, df, "left", ["codigo_estacion", "segundos"])
+        return pd.merge(df_temp, df, "left", ["codigo_estacion", "segundos", "latitud", "longitud"])
 
     def export_data(self, save_file_path:Path, **kwargs) -> None:
         print("=" * 50)
@@ -429,3 +429,4 @@ if __name__=="__main__":
         main()
     except KeyboardInterrupt:
         print("\nProceso interrumpido manualmente")
+# %%
