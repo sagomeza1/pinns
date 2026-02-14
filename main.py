@@ -8,7 +8,7 @@ from src.process_data import ProcessDataBrusselas , ProcessDataColombia
 
 def main():
     
-    num_epochs = 2000
+    num_epochs = 3000
     lamb = 2
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Usando dispositivo: {device}")
@@ -29,11 +29,12 @@ def main():
     
     process_data.load_data()
     kwargs = {
-        # "R":0.15,
+        # "rho":12.69,
+        # "R":0.5,
         "n_days":30,
         "interval":3,
-        # "WS_val_idx": np.array([4, 8]),
-        "WS_val_idx": np.array([1, 2, 3, 5, 7, 9, 10, 11, 13, 14, 15, 16, 19]),
+        "WS_val_idx": np.array([4, 8]),
+        # "WS_val_idx": np.array([1, 2, 3, 5, 7, 9, 10, 11, 13, 14, 15, 16, 19]),
         }
     process_data.process_data(**kwargs)
     history = train_pinn_brusselas(process_data, model=model, device=device, lamb=lamb, num_epochs=num_epochs, save_path=save_path)

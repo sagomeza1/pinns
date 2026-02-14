@@ -475,7 +475,7 @@ class ProcessDataColombia:
             self.P_WS[:, snap] = self.P_WS[idx_sort, snap]
             self.Temp_WS[:, snap] = self.Temp_WS[idx_sort, snap]
 
-    def _centered_grid_adimensionalization(self, R:float = 0.2, rho:float = 1.269, nu:float = 1.382e-5) -> None:
+    def _centered_grid_adimensionalization(self, R:float = 0.2, rho:float = 12.69, nu:float = 1.382e-5) -> None:
         # Centrado
         x_min, x_max = np.min(self.X_WS), np.max(self.X_WS)
         y_min, y_max = np.min(self.Y_WS), np.max(self.Y_WS)

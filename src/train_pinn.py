@@ -321,6 +321,18 @@ def train_pinn_colombia(process_data: ProcessData, model:nn.Module, device:str, 
                 'loss': avg_loss,
             }, save_path)
             print(f"Modelo guardado en: {save_path}")
+            
+            sio.savemat(save_path.with_name(f"history_{save_path.stem}.mat"),
+                        {
+                            "epoch": history["epoch"],
+                            "loss": history["loss"],
+                            "ns_loss": history["ns_loss"],
+                            "u_loss": history["u_loss"],
+                            "v_loss": history["v_loss"],
+                            "p_loss": history["p_loss"],
+                            "lr": history["lr"],
+                        })
+            print(f"Métricas almacendas en : {save_path}")
 
             # Aquí podrías agregar la lógica de inferencia sobre X_PINN y guardar el .mat
             # similar al bloque 'Save Data' del original, usando model.eval()
