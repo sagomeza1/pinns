@@ -8,7 +8,7 @@ from src.process_data import ProcessDataBrusselas , ProcessDataColombia
 
 def main():
     
-    num_epochs = 3000
+    num_epochs = 2000
     lamb = 2
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Usando dispositivo: {device}")
@@ -17,7 +17,7 @@ def main():
     data_path = Path().cwd() / "data" / "raw" / "weather_data.mat"
     data_path = Path().cwd() / "data" / "raw" / "weather_data.parquet"
     data_path = Path().cwd() / "data" / "raw" / "em_cundinamarca_boyaca_251201_251231_11ws_interpo.parquet"
-    data_path = Path().cwd() / "data" / "raw" / "em_caribe_251201_251231_22ws_interpo.parquet"
+    data_path = Path().cwd() / "data" / "raw" / "em_caribe_20251201_20251231.parquet"
     
     save_path = Path().cwd() / "models" / f"PINN_car_epchos_{num_epochs}_lamb_{lamb}.pth"
     
@@ -32,8 +32,8 @@ def main():
         # "rho":12.69,
         # "R":0.5,
         "n_days":30,
-        "interval":3,
-        "WS_val_idx": np.array([4, 8]),
+        "interval":1,
+        "WS_val_idx": np.array([4, 8, 16, 18]),
         # "WS_val_idx": np.array([1, 2, 3, 5, 7, 9, 10, 11, 13, 14, 15, 16, 19]),
         }
     process_data.process_data(**kwargs)
