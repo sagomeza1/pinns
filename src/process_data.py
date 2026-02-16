@@ -368,13 +368,13 @@ class ProcessDataColombia:
         self._centered_grid_adimensionalization(**centered_kwargs)
         print("--- OK ---")
 
-        print("--- Separar entre validación y entrenamiento ---")
-        # Filtrar kwargs: solo pasar los que acepta _split_validation_train
-        split_kwargs = {k: v for k, v in kwargs.items() if k in ['WS_val_idx']}
-        self._split_validation_train(**split_kwargs)
-        print("--- OK ---")
+        # print("--- Separar entre validación y entrenamiento ---")
+        # # Filtrar kwargs: solo pasar los que acepta _split_validation_train
+        # split_kwargs = {k: v for k, v in kwargs.items() if k in ['WS_val_idx']}
+        # self._split_validation_train(**split_kwargs)
+        # print("--- OK ---")
 
-        self._state_data_process = True
+        # self._state_data_process = True
 
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
@@ -475,7 +475,7 @@ class ProcessDataColombia:
             self.P_WS[:, snap] = self.P_WS[idx_sort, snap]
             self.Temp_WS[:, snap] = self.Temp_WS[idx_sort, snap]
 
-    def _centered_grid_adimensionalization(self, R:float = 0.2, rho:float = 12.69, nu:float = 1.382e-5) -> None:
+    def _centered_grid_adimensionalization(self, R:float = 0.2, rho:float = 1.269, nu:float = 1.382e-5) -> None:
         # Centrado
         x_min, x_max = np.min(self.X_WS), np.max(self.X_WS)
         y_min, y_max = np.min(self.Y_WS), np.max(self.Y_WS)
