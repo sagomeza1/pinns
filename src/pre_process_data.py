@@ -187,6 +187,11 @@ class DataPreprocessor:
             clean_full_stations = self._complete_nans(clean_full_stations)
             print(f"{' OK':.>5}")
 
+            # Eliminando outliers
+            print(f"{'Eliminando outliers ':.<45}", end="")
+            clean_full_stations = self._remove_outliers(clean_full_stations)
+            print(f"{' OK':.>5}")
+
             # Interpolación
             if self.interpolate:
                 print(f"{'Interpolación ':.<45}", end="")
@@ -337,7 +342,7 @@ class DataPreprocessor:
             longitude = df.loc[df["codigo_estacion"] == station_id, "longitud"]
             altitude = df.loc[df["codigo_estacion"] == station_id, "altura"]
 
-            latitude = np.tile(latitude.values[0], len(interpolated_seconds))
+            latitude = np.tile(latitude.values[0], len(interpolated_seconds))   
             longitude = np.tile(longitude.values[0], len(interpolated_seconds))
             altitude = np.tile(altitude.values[0], len(interpolated_seconds))
             station_id = np.tile(station_id, len(interpolated_seconds))
@@ -376,6 +381,17 @@ class DataPreprocessor:
         df_temp["longitud"] = df_temp["codigo_estacion"].map(dict(zip(coor["codigo_estacion"], coor["longitud"])))
         
         return pd.merge(df_temp, df, "left", ["codigo_estacion", "segundos", "latitud", "longitud"])
+
+    def _remove_outliers(self, df:pd.DataFrame) -> pd.DataFrame:
+        for col in ["vel_u", "vel_v"]: 
+            df = self._filter_df(df, col)
+        return df
+
+    def _filter_df(self, df:pd.DataFrame, col:str) -> pd.DataFrame:
+            q25 = np.nanquantile(df[col].values, 0.25)
+            q75 = np.nanquantile(df[col].values, 0.75)
+            df[col] = df[col].apply(lambda x: x if (x <= q75*10) & (x >= q25*10) else np.nan)
+            return df        
 
     def export_data(self, save_file_path:Path, **kwargs) -> None:
         print("=" * 50)
