@@ -63,23 +63,23 @@ class ProcessDataBrusselas:
         self._filter_by_time_and_sort_by_coor(**filter_kwargs)
         print("--- OK ---")
 
-        print("--- Corrección de presión a nivel del mar (ISA) ---")
-        # Corrección de presión a nivel del mar (ISA)
-        self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
-        print("--- OK ---")
+        # print("--- Corrección de presión a nivel del mar (ISA) ---")
+        # # Corrección de presión a nivel del mar (ISA)
+        # self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
+        # print("--- OK ---")
 
-        print("--- Centrado y creación de la malla ---")
-        centered_kwargs = {k: v for k, v in kwargs.items() if k in ['R']}
-        self._centered_grid_adimensionalization(**centered_kwargs)
-        print("--- OK ---")
+        # print("--- Centrado y creación de la malla ---")
+        # centered_kwargs = {k: v for k, v in kwargs.items() if k in ['R']}
+        # self._centered_grid_adimensionalization(**centered_kwargs)
+        # print("--- OK ---")
 
-        print("--- Separar entre validación y entrenamiento ---")
-        # Filtrar kwargs: solo pasar los que acepta _split_validation_train
-        split_kwargs = {k: v for k, v in kwargs.items() if k in ['WS_val_idx']}
-        self._split_validation_train(**split_kwargs)
-        print("--- OK ---")
+        # print("--- Separar entre validación y entrenamiento ---")
+        # # Filtrar kwargs: solo pasar los que acepta _split_validation_train
+        # split_kwargs = {k: v for k, v in kwargs.items() if k in ['WS_val_idx']}
+        # self._split_validation_train(**split_kwargs)
+        # print("--- OK ---")
 
-        self._state_data_process = True
+        # self._state_data_process = True
 
     def _process_time(self) -> None:
         # Conversión de fecha a tiempo continuo (segundos)
@@ -363,18 +363,18 @@ class ProcessDataColombia:
         self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
         print("--- OK ---")
 
-        print("--- Centrado y creación de la malla ---")
-        centered_kwargs = {k: v for k, v in kwargs.items() if k in ['R', 'rho', 'nu']}
-        self._centered_grid_adimensionalization(**centered_kwargs)
-        print("--- OK ---")
+        # print("--- Centrado y creación de la malla ---")
+        # centered_kwargs = {k: v for k, v in kwargs.items() if k in ['R', 'rho', 'nu']}
+        # self._centered_grid_adimensionalization(**centered_kwargs)
+        # print("--- OK ---")
 
-        print("--- Separar entre validación y entrenamiento ---")
-        # Filtrar kwargs: solo pasar los que acepta _split_validation_train
-        split_kwargs = {k: v for k, v in kwargs.items() if k in ['WS_val_idx']}
-        self._split_validation_train(**split_kwargs)
-        print("--- OK ---")
+        # print("--- Separar entre validación y entrenamiento ---")
+        # # Filtrar kwargs: solo pasar los que acepta _split_validation_train
+        # split_kwargs = {k: v for k, v in kwargs.items() if k in ['WS_val_idx']}
+        # self._split_validation_train(**split_kwargs)
+        # print("--- OK ---")
 
-        self._state_data_process = True
+        # self._state_data_process = True
 
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
