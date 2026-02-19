@@ -38,7 +38,7 @@ class ProcessDataBrusselas:
         '''
         if not os.path.exists(self.filepath):
             raise FileNotFoundError(f"No se encontró el archivo: {self.filepath}")
-        print(f"Iniciando carga de {self.filepath}")
+        print(f"Iniciando carga de {self.filepath.name}")
         t0 = datetime.now()
         self.WS_data = pd.read_parquet(self.filepath, engine="fastparquet")
         self._tiempo_de_carga = datetime.now() - t0
@@ -325,12 +325,13 @@ class ProcessDataColombia:
         '''
         if not self.filepath.exists():
             raise FileNotFoundError(f"No se encontró el archivo: {self.filepath}")
-        print(f"Iniciando carga de {self.filepath}")
+        print("-"*70)
+        print(f"{'CARGA DE DATOS':^70}")
+        print(f'{f"Iniciando carga de {self.filepath.name} ":.<65}', end="")
         t0 = datetime.now()
         self.wsdata = pd.read_parquet(self.filepath, engine="fastparquet")
         self._tiempo_de_carga = datetime.now() - t0
         # print(f"Documento cargado en {self._tiempo_de_carga:.2e} s.")
-        print(f"Documento cargado en {self._tiempo_de_carga} s.")
         self.codigo_estacion = self.wsdata["codigo_estacion"]
         self.latitud = self.wsdata["latitud"]
         self.longitud = self.wsdata["longitud"]
@@ -341,40 +342,46 @@ class ProcessDataColombia:
         self.vel_v = self.wsdata["vel_v"]
         self.temperatura = self.wsdata["temperatura"]
         self.numero_estaciones = self.wsdata['codigo_estacion'].nunique()
+        print(f"{' OK':.>5}")
+        print("-"*70)
 
     def process_data(self, **kwargs) -> None:
 
-        print("--- Coordenadas Cartesianas y Proyecciones ---")
+        print("-"*70)
+        print(f"{'PROCESAMIETO DE DATOS':^70}")
+
+        print(f"{'Coordenadas Cartesianas y Proyecciones ':.<65}", end="")
         self._process_coordinates_and_projections()
-        print("--- OK ---")
+        print(f"{' OK':.>5}")
 
-        print("--- Eliminar NaNs ---")
+        print(f"{'Eliminar NaNs ':.<65}", end="")
         self._reshape_delete_nans()
-        print("--- OK ---")
+        print(f"{' OK':.>5}")
 
-        print("--- Selección de días y ordenamiento por coor ---")
+        print(f"{'Selección de días y ordenamiento por coor ':.<65}", end="")
         # Filtrar kwargs: solo pasar los que acepta _filter_by_time_and_sort_by_coor
         filter_kwargs = {k: v for k, v in kwargs.items() if k in ['n_days', 'interval']}
         self._filter_by_time_and_sort_by_coor(**filter_kwargs)
-        print("--- OK ---")
+        print(f"{' OK':.>5}")
 
-        print("--- Corrección de presión a nivel del mar (ISA) ---")
+        print(f"{'Corrección de presión a nivel del mar (ISA) ':.<65}", end="")
         # Corrección de presión a nivel del mar (ISA)
         self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
-        print("--- OK ---")
+        print(f"{' OK':.>5}")
 
-        # print("--- Centrado y creación de la malla ---")
-        # centered_kwargs = {k: v for k, v in kwargs.items() if k in ['R', 'rho', 'nu']}
-        # self._centered_grid_adimensionalization(**centered_kwargs)
-        # print("--- OK ---")
+        print(f"{'Centrado y creación de la malla ':.<65}", end="")
+        centered_kwargs = {k: v for k, v in kwargs.items() if k in ['R', 'rho', 'nu']}
+        self._centered_grid_adimensionalization(**centered_kwargs)
+        print(f"{' OK':.>5}")
 
-        # print("--- Separar entre validación y entrenamiento ---")
-        # # Filtrar kwargs: solo pasar los que acepta _split_validation_train
-        # split_kwargs = {k: v for k, v in kwargs.items() if k in ['WS_val_idx']}
-        # self._split_validation_train(**split_kwargs)
-        # print("--- OK ---")
+        print(f"{'Separar entre validación y entrenamiento ':.<65}", end="")
+        # Filtrar kwargs: solo pasar los que acepta _split_validation_train
+        split_kwargs = {k: v for k, v in kwargs.items() if k in ['WS_val_idx']}
+        self._split_validation_train(**split_kwargs)
+        print(f"{' OK':.>5}")
 
-        # self._state_data_process = True
+        self._state_data_process = True
+        print("-"*70)
 
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
@@ -434,8 +441,8 @@ class ProcessDataColombia:
         one_day = 24 * 3600
         seconds_days = one_day * n_days
         seconds_days_args = self.T_WS[0,:] <= seconds_days
-        
-        print(f"---> Se registran {np.nanmax(self.T_WS) // one_day} días de registros")
+
+        # print(f"---> Se registran {np.nanmax(self.T_WS) // one_day} días de registros")
 
         self.T_WS = self.T_WS[:,seconds_days_args]
         self.X_WS = self.X_WS[:,seconds_days_args]
@@ -447,7 +454,6 @@ class ProcessDataColombia:
         self.Temp_WS = self.Temp_WS[:,seconds_days_args]
 
         self.params["n_days"] = n_days
-        print(f"---> {n_days} selected days")
 
         # Selection of interval
         self.T_WS = self.T_WS[:, ::interval]
@@ -459,8 +465,7 @@ class ProcessDataColombia:
         self.P_WS = self.P_WS[:, ::interval]
         self.Temp_WS = self.Temp_WS[:, ::interval]
 
-        self.params["interval"] = interval
-        print(f"---> Interval of {self.T_WS[0,1] / 60} min")
+        self.params["interval"] = f"{self.T_WS[0,1] / 60} min"
 
 
         # Order by coor X
@@ -484,7 +489,7 @@ class ProcessDataColombia:
         self.X_WS = self.X_WS - (x_min + x_max) / 2
         self.Y_WS = self.Y_WS - (y_min + y_max) / 2
         self.T_WS = self.T_WS - t_min
-        # self.T_WS = (self.T_WS - t_min) / (t_max - t_min)
+
 
         # Grilla PINN
         T_PINN = self.T_WS[0:1, :]
@@ -508,14 +513,11 @@ class ProcessDataColombia:
         L = np.sqrt((x_max - x_min)**2 + (y_max - y_min)**2)
         W = np.sqrt(np.nanmax(np.abs(self.U_WS))**2 + np.nanmax(np.abs(self.V_WS))**2)
         Re = int(W * L / nu)
-        P0 = np.nanmean(self.P_WS)# / (p_max - p_min)
-
-        print(f'---> L: {L:.2f}, W: {W:.2f}, P0: {P0:.2f}, Re: {Re} --')
+        P0 = np.nanmean(self.P_WS)
 
         self.X_WS = self.X_WS / L
         self.Y_WS = self.Y_WS / L
         self.T_WS = self.T_WS * W / L
-        # self.P_WS = (self.P_WS - P0) / (rho * W)
         self.P_WS = (self.P_WS - P0) / (rho * W**2)
         self.U_WS = self.U_WS / W
         self.V_WS = self.V_WS / W
@@ -532,20 +534,13 @@ class ProcessDataColombia:
         self.params['dim_T_PINN'] = dim_T_PINN
         self.params['R'] = R
 
-        print(f"#\t{self.X_PINN.shape=}\t{self.Y_PINN.shape=}\t#")
-        print(f"#\t{np.nanmin(self.T_WS)=:.3e}\t{np.nanmax(self.T_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.P_WS)=:.3e}\t{np.nanmax(self.P_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.U_WS)=:.3e}\t{np.nanmax(self.U_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.V_WS)=:.3e}\t{np.nanmax(self.V_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.X_WS)=:.3e}\t{np.nanmax(self.X_WS)=:.3e}\t#")
-        print(f"#\t{np.nanmin(self.Y_WS)=:.3e}\t{np.nanmax(self.Y_WS)=:.3e}\t#")
 
-    def _split_validation_train(self,
-                                WS_val_idx: np.ndarray = np.sort(np.random.choice(7, 3, replace=False))) -> None:
+
+    def _split_validation_train(self, WS_val_idx: np.ndarray = np.sort(np.random.choice(7, 3, replace=False))) -> None:
         # Datos de validación
-        print("The station for validation are: ", end="")
-        for idx in WS_val_idx[:-1]: print(idx, end=", ")
-        print(f"{WS_val_idx[-1]}.")
+        # print("The station for validation are: ", end="")
+        # for idx in WS_val_idx[:-1]: print(idx, end=", ")
+        # print(f"{WS_val_idx[-1]}.")
 
         self.val_data = {
             'T': self.T_WS[WS_val_idx, :],
@@ -574,7 +569,6 @@ class ProcessDataColombia:
 
         self.params["WS_val_idx"] = WS_val_idx
 
-
     def return_data(self):
         if self._state_data_process:
             return self.train_data, self.val_data, self.pinn_grid, self.params
@@ -595,6 +589,41 @@ class ProcessDataColombia:
         plt.title('Ubicación de Estaciones')
         plt.grid(True)
         plt.show()
+
+    def resume(self) -> None:
+        print("-"*70)
+        print(f"{'RESUMEN DE DATOS':^70}")
+
+        record_days = int(np.nanmax(self.segundos) // (24*3600))
+        print(f"{'Días registrados:':<65}{record_days:>5}")
+
+        print(f"{'Días seleccionados:':<65}{self.params["n_days"]:>5}")
+        print(f"{'Cantidad de estaciones:':<65}{self.numero_estaciones:>5}")
+        print(f"{'Cantidad de estaciones para entrenar:':<65}{self.numero_estaciones - len(self.params["WS_val_idx"]):>5}")
+        print(f"{'Cantidad de estaciones para validar:':<65}{len(self.params["WS_val_idx"]):>5}")
+
+        for key in ['L','W','P0','rho','Re','R', 'interval']:
+            value = self.params[key]
+            formatted_value = f"{value:,.2f}" if isinstance(value, (float, int)) else value
+            print(f"{key + ':':<45}{formatted_value:>25}")
+
+        grid_dim = self.X_PINN.shape
+        print(f"{'Dimensión malla:':<45}{str(grid_dim):>25}")
+        print(f"{'(t_min, t_max):':<45}{self._str_min_max(self.T_WS):>25}")
+        print(f"{'(p_min, p_max):':<45}{self._str_min_max(self.P_WS):>25}")
+        print(f"{'(u_min, u_max):':<45}{self._str_min_max(self.U_WS):>25}")
+        print(f"{'(v_min, v_max):':<45}{self._str_min_max(self.V_WS):>25}")
+        print(f"{'(x_min, x_max):':<45}{self._str_min_max(self.X_WS):>25}")
+        print(f"{'(y_min, y_max):':<45}{self._str_min_max(self.Y_WS):>25}")
+        print("-"*70)
+        ...
+
+    def _str_min_max(self, array:np.ndarray) -> str:
+        min = f"{np.nanmin(array):.2e}"
+        max = f"{np.nanmax(array):.2e}"
+        return f"({min} , {max})"
+
+        ...
 
     def export_data(self, data_file_path: Path):
         np.savez(data_file_path,
