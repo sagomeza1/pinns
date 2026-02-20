@@ -1,4 +1,4 @@
-use EM_CAR;
+use EM_CAR3;
 go
 
 
@@ -59,5 +59,23 @@ insert into dbo.estaciones_full (
 			temperatura
 )
 select *
-from estacion_full;
+from estacion_full
+where codigo_estacion in (
+	select codigo_estacion
+	from (
+		select codigo_estacion , longitud, latitud
+		from dbo.presion
+		union
+		select codigo_estacion , longitud, latitud
+		from dbo.dir_viento
+		union
+		select codigo_estacion , longitud, latitud
+		from dbo.vel_viento
+		union
+		select codigo_estacion , longitud, latitud
+		from dbo.temp_aire		
+	) as subquery
+	group by codigo_estacion
+	having count(distinct(longitud)) + count(distinct(latitud)) = 2
+);
 

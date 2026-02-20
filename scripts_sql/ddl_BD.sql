@@ -1,4 +1,4 @@
-use EM_CAR;
+use EM_CAR3;
 go
 
 -- Se eliminan las tablas previamente creadas

@@ -120,7 +120,7 @@ class DataPreprocessor:
         full_query = "SELECT * FROM dbo.estaciones_full;"
         coor_query = "SELECT * FROM dbo.coordenadas_estaciones;"
 
-        print("=" * 50)
+        print("-" * 50)
         print(f"{' Iniciando carga de datos desde SQL Server ':^50}")
         print(f"{'Carga completada ':.<45}", end="")
 
@@ -139,23 +139,22 @@ class DataPreprocessor:
             print(f"\n[ERROR CRÍTICO]: Fallo en la conexión o consulta: {error}\n")
         except Exception as error:
             print(f"\n[ERROR INESPERADO]: {error}\n")
-        print("=" * 50)
+        print("-" * 50)
 
     def process_data(self) -> None:
         """
         Procesa el resultado de las consulta para su formato final
         """
-        print("=" * 50)
+        print("-" * 50)
         print(f"{'Iniciando Procesamiento de los datos':^50}")
         # Copia de los dfs originales
-        full_stations = self.full_stations_data.copy()
-        coor_stations = self.coor_stations_data.copy()
+        clean_full_stations = self.full_stations_data.copy()
 
         try:
             # Limpieza de los datos
             print(f"{'Limpieza de los datos ':.<45}", end="")
             clean_params = self._filter_kwargs_for_function(self._clean_dataframe, **self.global_config)
-            clean_full_stations = self._clean_dataframe(full_stations, **clean_params)
+            clean_full_stations = self._clean_dataframe(clean_full_stations, **clean_params)
             print(f"{' OK':.>5}")
 
             # Adición de la altura
@@ -195,8 +194,8 @@ class DataPreprocessor:
             # Interpolación
             if self.interpolate:
                 print(f"{'Interpolación ':.<45}", end="")
-                inter_params = self._filter_kwargs_for_function(self._filter_stations, **self.global_config)
-                inter_full_stations = self._filter_stations(clean_full_stations, **inter_params)
+                inter_params = self._filter_kwargs_for_function(self._interpolate_data, **self.global_config)
+                inter_full_stations = self._interpolate_data(clean_full_stations, **inter_params)
                 self.inter_full_stations = inter_full_stations
                 print(f"{' OK':.>5}")
 
@@ -206,7 +205,7 @@ class DataPreprocessor:
             return None
 
         self.clean_full_stations = clean_full_stations
-        print("=" * 50)
+        print("-" * 50)
 
     def _clean_dataframe(self, df:pd.DataFrame, criteria: FilterStrategy) -> pd.DataFrame:
         """
@@ -244,7 +243,7 @@ class DataPreprocessor:
             min_date=station_data["fecha_observacion"].min(),
             max_date=station_data["fecha_observacion"].max(),
             unique_diffs=station_data["fecha_observacion"].sort_values().diff().dropna().unique().tolist(),
-            row_count=len(station_data)
+            row_count=station_data["fecha_observacion"].apply(lambda time: time.minute == 0).sum()
         )
         ...
 
@@ -380,7 +379,7 @@ class DataPreprocessor:
         df_temp["latitud"] = df_temp["codigo_estacion"].map(dict(zip(coor["codigo_estacion"], coor["latitud"])))
         df_temp["longitud"] = df_temp["codigo_estacion"].map(dict(zip(coor["codigo_estacion"], coor["longitud"])))
         
-        return pd.merge(df_temp, df, "left", ["codigo_estacion", "segundos", "latitud", "longitud"])
+        return pd.merge(df_temp, df, "left", ["codigo_estacion", "segundos", "latitud", "longitud"]).sort_values(["codigo_estacion", "segundos"])
 
     def _remove_outliers(self, df:pd.DataFrame) -> pd.DataFrame:
         for col in ["vel_u", "vel_v"]: 
@@ -394,7 +393,7 @@ class DataPreprocessor:
             return df        
 
     def export_data(self, save_file_path:Path, **kwargs) -> None:
-        print("=" * 50)
+        print("-" * 50)
         print(f"{'Iniciando Procesamiento de los datos':^50}")
         try:
             print(f"{'Exportando registro de las estaciones ':.<45}", end="")
@@ -410,7 +409,7 @@ class DataPreprocessor:
             print("ERROR")
             print(f"Error: {e}")
             return None
-        print("=" * 50)
+        print("-" * 50)
 
     def time_diff(self) -> None:
         print("Diferencias registradas entre las fechas:")
@@ -424,16 +423,19 @@ def main():
     DIR_DATA_PATH = Path('c:/Users/User/Documents/pinns/data/raw')
     # Configuración de los parámetros de conexión
     def filter_by_min_rows(metrics: StationMetrics) -> bool:
-        return metrics.row_count >= 700
+        
+        return metrics.row_count >= 2000
+        # return metrics.row_count >= 700
 
     kwargs = {
         'server'        : 'localhost\\SQLEXPRESS',
-        'database'      : 'EM_CAR',
+        'database'      : 'EM_CAR3',
         'interpolate'   : True,
         'criteria'      : filter_by_min_rows,
         'min_pressure'  : 800,
         'max_altitude'  : 1000,
-        'save_file_path': DIR_DATA_PATH / "em_caribe_20251201_20251231.parquet"
+        'seconds'       : 3600,
+        'save_file_path': DIR_DATA_PATH / "em_caribe3_20251001_20251231.parquet"
     }
     preprocess = DataPreprocessor(**kwargs)
     preprocess.load_data()
@@ -446,3 +448,26 @@ if __name__=="__main__":
     except KeyboardInterrupt:
         print("\nProceso interrumpido manualmente")
 # %%
+
+# DIR_DATA_PATH = Path('c:/Users/User/Documents/pinns/data/raw')
+# # Configuración de los parámetros de conexión
+# def filter_by_min_rows(metrics: StationMetrics) -> bool:
+#     return metrics.row_count >= 2000
+#     # return metrics.row_count >= 700
+
+# kwargs = {
+#     'server'        : 'localhost\\SQLEXPRESS',
+#     'database'      : 'EM_CAR3',
+#     'interpolate'   : True,
+#     'criteria'      : filter_by_min_rows,
+#     'min_pressure'  : 800,
+#     'max_altitude'  : 1000,
+#     'save_file_path': DIR_DATA_PATH / "em_caribe3_20251201_20251231.parquet"
+# }
+# preprocess = DataPreprocessor(**kwargs)
+# preprocess.load_data()
+# preprocess.process_data()
+
+# df_raw = preprocess.full_stations_data.copy()
+# df2 = preprocess.clean_full_stations.copy()
+# # %%

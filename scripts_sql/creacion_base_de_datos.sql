@@ -6,14 +6,14 @@ go
 if not exists (
     select name
     from sys.databases
-    where name = N'EM_CAR'
+    where name = N'EM_CAR3'
 )
 begin
-    print 'Creando BD EM_CAR'
-    create database EM_CAR;
+    print 'Creando BD EM_CAR3'
+    create database EM_CAR3;
 end
 else
 begin
-    print 'La BD EM_CAR ya existe'
+    print 'La BD EM_CAR3 ya existe'
 end
 go
