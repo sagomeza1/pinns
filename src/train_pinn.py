@@ -1,12 +1,12 @@
 
 import torch
+import logging
 import datetime
 import numpy as np
 import pandas as pd
 import torch.nn as nn
 import scipy.io as sio
 import torch.optim as optim
-
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import StepLR
 from pathlib import Path
@@ -15,6 +15,7 @@ from .process_data import ProcessDataBrusselas as ProcessData
 from .dataset import StationDataset, CollocationDataset
 from .loss_functions import *
 
+logger = logging.getLogger(__name__)
 mse = nn.MSELoss()
 
 # Configuración del dispositivo
@@ -32,6 +33,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     try:
         train_data, val_data, pinn_grid, params = process_data.return_data()
         print(f'{" OK":.>20}')
+        logger.info("Datos cargados.")
     except Exception as e:
         print(f'{" ERROR":.>20}')
         print(f"Error cargando datos: {e}")
@@ -39,7 +41,6 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     print("-"*70)
     print(f'{"Epocas: ":<50}{num_epochs:>20,}')
     print(f'{"lamb: ":<50}{lamb:>20,}')
-
     # 2. Preparar Datasets y DataLoaders
     # Dataset de Estaciones (Datos observados)
     station_dataset = StationDataset(train_data)

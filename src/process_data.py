@@ -346,10 +346,13 @@ class ProcessDataColombia:
         self.vel_v = self.wsdata["vel_v"]
         self.temperatura = self.wsdata["temperatura"]
         self.numero_estaciones = self.wsdata['codigo_estacion'].nunique()
+        record_days = int(np.nanmax(self.segundos) // (24*3600))
         print(f"{' OK':.>5}")
         print("-"*70)
-        logger.info(f"Información cargada en {self._tiempo_de_carga} s.")
-        
+        logger.info(f"Información cargada en {self._tiempo_de_carga.total_seconds():.2e} s.")
+        logger.debug(f"Max segundos: {int(np.nanmax(self.segundos)):,} s. Días registrados: {record_days}")
+        logger.debug(f"Número estaciones: {self.numero_estaciones}.")
+
 
     def process_data(self, **kwargs) -> None:
 
@@ -388,7 +391,7 @@ class ProcessDataColombia:
 
         self._state_data_process = True
         print("-"*70)
-        logger.info(f"Información procesada.")
+        logger.info(f"Datos procesados.")
 
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
@@ -541,6 +544,14 @@ class ProcessDataColombia:
         self.params['dim_T_PINN'] = dim_T_PINN
         self.params['R'] = R
 
+        logger.debug(f"{L=}")
+        logger.debug(f"{W=}")
+        logger.debug(f"{P0=}")
+        logger.debug(f"{rho=}")
+        logger.debug(f"{Re=}")
+        logger.debug(f"{dim_T_PINN=}")
+        logger.debug(f"{R=}")
+
 
 
     def _split_validation_train(self, WS_val_idx: np.ndarray = np.sort(np.random.choice(7, 3, replace=False))) -> None:
@@ -575,6 +586,14 @@ class ProcessDataColombia:
         }
 
         self.params["WS_val_idx"] = WS_val_idx
+        logger.debug(f"Cantidad de estaciones para validar: {len(WS_val_idx)}")
+        logger.debug(f"{WS_val_idx=}")
+        logger.debug(f"(t_min, t_max):{self._str_min_max(self.T_WS):>25}")
+        logger.debug(f"(p_min, p_max):{self._str_min_max(self.P_WS):>25}")
+        logger.debug(f"(u_min, u_max):{self._str_min_max(self.U_WS):>25}")
+        logger.debug(f"(v_min, v_max):{self._str_min_max(self.V_WS):>25}")
+        logger.debug(f"(x_min, x_max):{self._str_min_max(self.X_WS):>25}")
+        logger.debug(f"(y_min, y_max):{self._str_min_max(self.Y_WS):>25}")
 
     def return_data(self):
         if self._state_data_process:
