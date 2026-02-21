@@ -70,7 +70,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     # optimizer = optim.Adam(model.parameters(), lr=5e-4)
     
     # Si la pérdida no baja en 15 épocas, reduce el LR a la mitad - Scheduler robusto (ReduceLROnPlateau).
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, threshold=1e-3)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, threshold=1e-1, cooldown=10, min_lr=1e-7)
     
     # Listas para historial
     history = {'epoch': [],'loss': [], 'ns_loss': [], 'p_loss': [], 'u_loss': [], 'v_loss': [], 'lr': []}
@@ -158,13 +158,13 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         
         # Ajuste adaptativo de Learning Rate (Lógica manual original)
         if avg_loss > 1e-1:
-            lr = 1e-5
+            lr = 1e-3
         elif avg_loss > 3e-2:
-            lr = 1e-6
+            lr = 1e-4
         elif avg_loss > 3e-3:
-            lr = 1e-7
+            lr = 1e-5
         else:
-            lr = 1e-8
+            lr = 1e-6
         
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr

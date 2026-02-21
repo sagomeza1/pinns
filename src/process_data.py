@@ -1,13 +1,16 @@
 import os
+import logging
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import scipy.io as sio
 import datetime as dt
+import scipy.io as sio
 import matplotlib.pyplot as plt
 
+from pathlib import Path
 from datetime import datetime
 from typing import Optional, Any
+
+logger = logging.getLogger(__name__)
 
 class ProcessDataBrusselas:
     '''
@@ -42,6 +45,7 @@ class ProcessDataBrusselas:
         t0 = datetime.now()
         self.WS_data = pd.read_parquet(self.filepath, engine="fastparquet")
         self._tiempo_de_carga = datetime.now() - t0
+        logger.info(f"Información cargada en {self._tiempo_de_carga} s.")
 
     def process_data(self, **kwargs) -> None:
 
@@ -344,6 +348,8 @@ class ProcessDataColombia:
         self.numero_estaciones = self.wsdata['codigo_estacion'].nunique()
         print(f"{' OK':.>5}")
         print("-"*70)
+        logger.info(f"Información cargada en {self._tiempo_de_carga} s.")
+        
 
     def process_data(self, **kwargs) -> None:
 
@@ -382,6 +388,7 @@ class ProcessDataColombia:
 
         self._state_data_process = True
         print("-"*70)
+        logger.info(f"Información procesada.")
 
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
