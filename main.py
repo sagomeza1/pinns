@@ -13,7 +13,7 @@ from src.process_data import ProcessDataBrusselas , ProcessDataColombia
 
 def now():
     t0 = datetime.datetime.now()
-    return f"{str(t0.year)[-2:]}{t0.month:02}{t0.day:02}-{t0.hour:02}{t0.minute:02}"
+    return f"{str(t0.year)[-2:]}{t0.month:02}{t0.day:02}_{t0.hour:02}{t0.minute:02}"
 
 log_file_path = Path().cwd() / "logs" / f"train_pinn_{now()}.log"
 
