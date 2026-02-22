@@ -6,14 +6,11 @@ import numpy as np
 from pathlib import Path
 from src.model_pinn import PINN
 from src.train_pinn import train_pinn_brusselas
-from config.logging_config import setup_imperative_production_config
 from src.process_data import ProcessDataBrusselas , ProcessDataColombia
 
+from config.basic_func import now
+from config.logging_config import setup_imperative_production_config
 
-
-def now():
-    t0 = datetime.datetime.now()
-    return f"{str(t0.year)[-2:]}{t0.month:02}{t0.day:02}_{t0.hour:02}{t0.minute:02}"
 
 logs_dir_path = Path().cwd() / "logs"
 logs_dir_path.mkdir(parents=True, exist_ok=True)
