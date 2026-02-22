@@ -15,7 +15,9 @@ def now():
     t0 = datetime.datetime.now()
     return f"{str(t0.year)[-2:]}{t0.month:02}{t0.day:02}_{t0.hour:02}{t0.minute:02}"
 
-log_file_path = Path().cwd() / "logs" / f"train_pinn_{now()}.log"
+logs_dir_path = Path().cwd() / "logs"
+logs_dir_path.mkdir(parents=True, exist_ok=True)
+log_file_path = logs_dir_path / f"train_pinn_{now()}.log"
 
 def main():
     
