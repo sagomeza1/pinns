@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../config")
 
 import torch
 import logging
@@ -20,10 +22,6 @@ mse = nn.MSELoss()
 
 # Configuración del dispositivo
 
-def now():
-    t0 = datetime.datetime.now()
-    return f"{str(t0.year)[-2:]}{t0.month:02}{t0.day:02}{t0.hour:02}{t0.minute:02}"
-
 def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str, lamb:float = 2.0, num_epochs:int = 1000, save_path = Path('PINN_brusselas.pth')):
     # 1. Cargar datos
     print("-"*70)
@@ -37,10 +35,11 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     except Exception as e:
         print(f'{" ERROR":.>20}')
         print(f"Error cargando datos: {e}")
-        return
-    print("-"*70)
-    print(f'{"Epocas: ":<50}{num_epochs:>20,}')
-    print(f'{"lamb: ":<50}{lamb:>20,}')
+        return None
+    
+    logger.info(f"Número de epocas: {num_epochs:,}.")
+    logger.debug(f"{lamb=}.")
+
     # 2. Preparar Datasets y DataLoaders
     # Dataset de Estaciones (Datos observados)
     station_dataset = StationDataset(train_data)
@@ -54,31 +53,35 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     batch_WS = int(np.ceil(len(station_dataset) / params['n_days'] * params['R']))
     batch_PINN = int(np.ceil(len(grid_dataset) / params['n_days'] * params['R']))
     
-    print(f'{"Registros estaciones: ":<50}{int(len(station_dataset)):>20,}')
-    print(f'{"Grilla: ":<50}{int(len(grid_dataset)):>20,}')
-
-    print(f'{"Batch estaciones: ":<50}{batch_WS:>20,}')
-    print(f'{"Batch grilla: ":<50}{batch_PINN:>20,}')
-    
-    print("-"*70)
+    logger.info(f"Registro estaciones: {int(len(station_dataset)):,}.")
+    logger.info(f"Grilla: {int(len(grid_dataset)):,}.")
 
     station_loader = DataLoader(station_dataset, batch_size=batch_WS, shuffle=True, drop_last=True)
     grid_loader = DataLoader(grid_dataset, batch_size=batch_PINN, shuffle=True, drop_last=True)
+    logger.info(f"Batch estaciones: {batch_WS}.")
+    logger.info(f"Batch grilla: {batch_PINN}.")
 
     # 3. Inicializar Modelo
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=5e-4)
+    logger.debug(f"{optimizer=}")
     # optimizer = optim.Adam(model.parameters(), lr=5e-4)
     
     # Si la pérdida no baja en 15 épocas, reduce el LR a la mitad - Scheduler robusto (ReduceLROnPlateau).
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, threshold=1e-1, cooldown=10, min_lr=1e-7)
+    logger.debug(f"{scheduler.mode=}")
+    logger.debug(f"{scheduler.factor=}")
+    logger.debug(f"{scheduler.threshold_mode=}")
+    logger.debug(f"{scheduler.threshold=}")
+    logger.debug(f"{scheduler.patience=}")
+    logger.debug(f"{scheduler.cooldown=}")
+    logger.debug(f"{scheduler.min_lrs=}")
     
     # Listas para historial
     history = {'epoch': [],'loss': [], 'ns_loss': [], 'p_loss': [], 'u_loss': [], 'v_loss': [], 'lr': []}
 
     print()
-    print("Iniciando entrenamiento")
-    
+    logger.info("Iniciando entrenamiento")
     for epoch in range(num_epochs):
         model.train()
         
@@ -103,11 +106,16 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             t_f_ref, x_f_ref, y_f_ref = t_u, x_u, y_u
 
             optimizer.zero_grad()
+            logger.debug(f"optimizer.zero_grad()")
             
             # 1. Pérdida Física (NS equations)
             loss_ns_grid = loss_navier_stokes(model, t_f, x_f, y_f)
             loss_ns_data = loss_navier_stokes(model, t_f_ref, x_f_ref, y_f_ref)
             loss_physics = lamb * (loss_ns_grid + loss_ns_data)
+
+            logger.debug(f"{loss_ns_grid=}")
+            logger.debug(f"{loss_ns_data=}")
+            logger.debug(f"{loss_physics=}")
 
             # 2. Pérdida de Datos (Predicción vs Real)
             # Hacemos forward pass para datos
@@ -117,7 +125,11 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             loss_u = loss_data_variable(u_pred, u_true)
             loss_v = loss_data_variable(v_pred, v_true)
             loss_p = loss_data_variable(p_pred, p_true)
-            
+
+            logger.debug(f"{loss_u=}")
+            logger.debug(f"{loss_v=}")
+            logger.debug(f"{loss_p=}")
+
             # loss_data = loss_u + loss_v + loss_p
 
             # 3. Pérdida Total (Suma ponderada compleja del original)
@@ -128,6 +140,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             
             # final_loss = total_sum
             final_loss = (loss_physics**2 + loss_u**2 + loss_v**2 + loss_p**2) / (loss_physics + loss_u + loss_v + loss_p)
+            logger.debug(f"{final_loss=}")
 
             final_loss.backward()
             
@@ -136,6 +149,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             
             optimizer.step()
+            logger.debug(f"optimizer.step()")
 
             # Acumular métricas
             epoch_loss += final_loss.item()
@@ -151,12 +165,18 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         avg_data_u = epoch_data_u / batches
         avg_data_v = epoch_data_v / batches
         avg_data_p = epoch_data_p / batches
-        
+        logger.debug(f"Número de batches: {batches}.")
+
         # Actualizar el scheduler basado en la pérdida promedio
         scheduler.step(avg_loss)
         
         current_lr = optimizer.param_groups[0]['lr']        
+        logger.debug(f"{current_lr=}.")
         
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                logger.debug(f"Capa: {name} | Valores: {param.data}.")
+
         # Ajuste adaptativo de Learning Rate (Lógica manual original)
         if avg_loss > 1e-1:
             lr = 1e-3
@@ -180,7 +200,9 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         history['lr'].append(float(lr) if isinstance(lr, torch.Tensor) else lr)
         
         if epoch % 10 == 0:
-            print(f"| Epoch: {epoch:4} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
+            logger.info(f"| Epoch: {epoch:4} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
+        else:
+            logger.debug(f"| Epoch: {epoch:4} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
 
         # Guardado periódico
         if (epoch + 1) % num_epochs == 0:

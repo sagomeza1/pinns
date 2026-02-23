@@ -332,6 +332,7 @@ class ProcessDataColombia:
         print("-"*70)
         print(f"{'CARGA DE DATOS':^70}")
         print(f'{f"Iniciando carga de {self.filepath.name} ":.<65}', end="")
+        logger.debug(f"Ruta de los datos: {self.filepath}")
         t0 = datetime.now()
         self.wsdata = pd.read_parquet(self.filepath, engine="fastparquet")
         self._tiempo_de_carga = datetime.now() - t0
@@ -350,47 +351,30 @@ class ProcessDataColombia:
         print(f"{' OK':.>5}")
         print("-"*70)
         logger.info(f"Información cargada en {self._tiempo_de_carga.total_seconds():.2e} s.")
+        logger.info(f"Cantidad de registros {len(self.wsdata):,}.")
         logger.debug(f"Max segundos: {int(np.nanmax(self.segundos)):,} s. Días registrados: {record_days}")
         logger.debug(f"Número estaciones: {self.numero_estaciones}.")
 
 
     def process_data(self, **kwargs) -> None:
 
-        print("-"*70)
-        print(f"{'PROCESAMIETO DE DATOS':^70}")
-
-        print(f"{'Coordenadas Cartesianas y Proyecciones ':.<65}", end="")
         self._process_coordinates_and_projections()
-        print(f"{' OK':.>5}")
-
-        print(f"{'Eliminar NaNs ':.<65}", end="")
         self._reshape_delete_nans()
-        print(f"{' OK':.>5}")
 
-        print(f"{'Selección de días y ordenamiento por coor ':.<65}", end="")
         # Filtrar kwargs: solo pasar los que acepta _filter_by_time_and_sort_by_coor
         filter_kwargs = {k: v for k, v in kwargs.items() if k in ['n_days', 'interval']}
         self._filter_by_time_and_sort_by_coor(**filter_kwargs)
-        print(f"{' OK':.>5}")
-
-        print(f"{'Corrección de presión a nivel del mar (ISA) ':.<65}", end="")
         # Corrección de presión a nivel del mar (ISA)
         self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
-        print(f"{' OK':.>5}")
 
-        print(f"{'Centrado y creación de la malla ':.<65}", end="")
         centered_kwargs = {k: v for k, v in kwargs.items() if k in ['R', 'rho', 'nu']}
         self._centered_grid_adimensionalization(**centered_kwargs)
-        print(f"{' OK':.>5}")
 
-        print(f"{'Separar entre validación y entrenamiento ':.<65}", end="")
         # Filtrar kwargs: solo pasar los que acepta _split_validation_train
         split_kwargs = {k: v for k, v in kwargs.items() if k in ['WS_val_idx']}
         self._split_validation_train(**split_kwargs)
-        print(f"{' OK':.>5}")
 
         self._state_data_process = True
-        print("-"*70)
         logger.info(f"Datos procesados.")
 
     def _process_coordinates_and_projections(self) -> None:
@@ -419,6 +403,8 @@ class ProcessDataColombia:
         self.V_WS = self._reshape_data(self.V_WS)
         self.P_WS = self._reshape_data(self.P_WS)
         self.Temp_WS = self._reshape_data(self.Temp_WS)
+        logger.debug(f"Nueva dimensión: {self.T_WS.shape}.")
+
 
         # Eliminar estaciones con NaNs en ubicación
         X_nan_index = np.argwhere(np.isnan(self.X_WS))
@@ -463,6 +449,7 @@ class ProcessDataColombia:
         self.P_WS = self.P_WS[:,seconds_days_args]
         self.Temp_WS = self.Temp_WS[:,seconds_days_args]
 
+        logger.debug(f"Días seleccionados: {n_days}")
         self.params["n_days"] = n_days
 
         # Selection of interval

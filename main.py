@@ -23,7 +23,7 @@ def main():
     lamb = 3.0
     n_days = 93
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Usando dispositivo: {device}")
+    logger.info(f"Usando dispositivo: {device}")
     
     data_path = Path().cwd() / "data" / "raw" / "em_cundinamarca_boyaca_251201_251231_11ws.parquet"
     data_path = Path().cwd() / "data" / "raw" / "weather_data.mat"
@@ -48,7 +48,6 @@ def main():
         # "WS_val_idx": np.array([1, 2, 3, 5, 7, 9, 10, 11, 13, 14, 15, 16, 19]),
         }
     process_data.process_data(**kwargs)
-    process_data.resume()
     print(f"{num_epochs=}")
     train_pinn_brusselas(process_data, model=model, device=device, lamb=lamb, num_epochs=num_epochs, save_path=save_path)
 
