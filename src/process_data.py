@@ -329,13 +329,10 @@ class ProcessDataColombia:
         '''
         if not self.filepath.exists():
             raise FileNotFoundError(f"No se encontró el archivo: {self.filepath}")
-        print("-"*70)
-        print(f"{'CARGA DE DATOS':^70}")
-        print(f'{f"Iniciando carga de {self.filepath.name} ":.<65}', end="")
-        logger.debug(f"Ruta de los datos: {self.filepath}")
         t0 = datetime.now()
         self.wsdata = pd.read_parquet(self.filepath, engine="fastparquet")
         self._tiempo_de_carga = datetime.now() - t0
+        logger.info(f"Cargado: {self.filepath.name}")
         # print(f"Documento cargado en {self._tiempo_de_carga:.2e} s.")
         self.codigo_estacion = self.wsdata["codigo_estacion"]
         self.latitud = self.wsdata["latitud"]
@@ -348,10 +345,8 @@ class ProcessDataColombia:
         self.temperatura = self.wsdata["temperatura"]
         self.numero_estaciones = self.wsdata['codigo_estacion'].nunique()
         record_days = int(np.nanmax(self.segundos) // (24*3600))
-        print(f"{' OK':.>5}")
-        print("-"*70)
-        logger.info(f"Información cargada en {self._tiempo_de_carga.total_seconds():.2e} s.")
         logger.info(f"Cantidad de registros {len(self.wsdata):,}.")
+        logger.debug(f"Información cargada en {self._tiempo_de_carga.total_seconds():.2e} s.")
         logger.debug(f"Max segundos: {int(np.nanmax(self.segundos)):,} s. Días registrados: {record_days}")
         logger.debug(f"Número estaciones: {self.numero_estaciones}.")
 

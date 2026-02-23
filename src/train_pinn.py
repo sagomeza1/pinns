@@ -24,13 +24,9 @@ mse = nn.MSELoss()
 
 def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str, lamb:float = 2.0, num_epochs:int = 1000, save_path = Path('PINN_brusselas.pth')):
     # 1. Cargar datos
-    print("-"*70)
-    print(f'{"ENTRENAMIENTO":^70}')
-    print(f'{"Cargando y procesando datos ":.<50}', end="")
     # Asegúrate de tener el archivo .mat en la carpeta correcta o ajustar el path
     try:
         train_data, val_data, pinn_grid, params = process_data.return_data()
-        print(f'{" OK":.>20}')
         logger.info("Datos cargados.")
     except Exception as e:
         print(f'{" ERROR":.>20}')
@@ -63,7 +59,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
 
     # 3. Inicializar Modelo
     model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=5e-4)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
     logger.debug(f"{optimizer=}")
     # optimizer = optim.Adam(model.parameters(), lr=5e-4)
     
@@ -80,7 +76,6 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     # Listas para historial
     history = {'epoch': [],'loss': [], 'ns_loss': [], 'p_loss': [], 'u_loss': [], 'v_loss': [], 'lr': []}
 
-    print()
     logger.info("Iniciando entrenamiento")
     for epoch in range(num_epochs):
         model.train()
@@ -106,16 +101,16 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             t_f_ref, x_f_ref, y_f_ref = t_u, x_u, y_u
 
             optimizer.zero_grad()
-            logger.debug(f"optimizer.zero_grad()")
+            # logger.debug(f"optimizer.zero_grad()")
             
             # 1. Pérdida Física (NS equations)
             loss_ns_grid = loss_navier_stokes(model, t_f, x_f, y_f)
             loss_ns_data = loss_navier_stokes(model, t_f_ref, x_f_ref, y_f_ref)
             loss_physics = lamb * (loss_ns_grid + loss_ns_data)
 
-            logger.debug(f"{loss_ns_grid=}")
-            logger.debug(f"{loss_ns_data=}")
-            logger.debug(f"{loss_physics=}")
+            # logger.debug(f"{loss_ns_grid=}")
+            # logger.debug(f"{loss_ns_data=}")
+            # logger.debug(f"{loss_physics=}")
 
             # 2. Pérdida de Datos (Predicción vs Real)
             # Hacemos forward pass para datos
@@ -126,9 +121,9 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             loss_v = loss_data_variable(v_pred, v_true)
             loss_p = loss_data_variable(p_pred, p_true)
 
-            logger.debug(f"{loss_u=}")
-            logger.debug(f"{loss_v=}")
-            logger.debug(f"{loss_p=}")
+            # logger.debug(f"{loss_u=}")
+            # logger.debug(f"{loss_v=}")
+            # logger.debug(f"{loss_p=}")
 
             # loss_data = loss_u + loss_v + loss_p
 
@@ -140,7 +135,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             
             # final_loss = total_sum
             final_loss = (loss_physics**2 + loss_u**2 + loss_v**2 + loss_p**2) / (loss_physics + loss_u + loss_v + loss_p)
-            logger.debug(f"{final_loss=}")
+            # logger.debug(f"{final_loss=}")
 
             final_loss.backward()
             
@@ -149,7 +144,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             
             optimizer.step()
-            logger.debug(f"optimizer.step()")
+            # logger.debug(f"optimizer.step()")
 
             # Acumular métricas
             epoch_loss += final_loss.item()
@@ -173,22 +168,22 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         current_lr = optimizer.param_groups[0]['lr']        
         logger.debug(f"{current_lr=}.")
         
-        for name, param in model.named_parameters():
-            if param.requires_grad:
-                logger.debug(f"Capa: {name} | Valores: {param.data}.")
+        # for name, param in model.named_parameters():
+        #     if param.requires_grad:
+        #         logger.debug(f"Capa: {name} | Valores: {param.data}.")
 
-        # Ajuste adaptativo de Learning Rate (Lógica manual original)
-        if avg_loss > 1e-1:
-            lr = 1e-3
-        elif avg_loss > 3e-2:
-            lr = 1e-4
-        elif avg_loss > 3e-3:
-            lr = 1e-5
-        else:
-            lr = 1e-6
+        # # Ajuste adaptativo de Learning Rate (Lógica manual original)
+        # if avg_loss > 1e-1:
+        #     lr = 1e-3
+        # elif avg_loss > 3e-2:
+        #     lr = 1e-4
+        # elif avg_loss > 3e-3:
+        #     lr = 1e-5
+        # else:
+        #     lr = 1e-6
         
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
+        # for param_group in optimizer.param_groups:
+        #     param_group['lr'] = lr
 
         # Guardar historial
         history['epoch'].append(epoch)
@@ -197,12 +192,12 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         history['p_loss'].append(float(avg_data_p) if isinstance(avg_data_p, torch.Tensor) else avg_data_p)
         history['u_loss'].append(float(avg_data_u) if isinstance(avg_data_u, torch.Tensor) else avg_data_u)
         history['v_loss'].append(float(avg_data_v) if isinstance(avg_data_v, torch.Tensor) else avg_data_v)
-        history['lr'].append(float(lr) if isinstance(lr, torch.Tensor) else lr)
+        history['lr'].append(float(current_lr) if isinstance(current_lr, torch.Tensor) else current_lr)
+        
+        logger.debug(f"|Epoch: {epoch:4}|Loss: {avg_loss:.3e}|Loss ns: {avg_ns:.3e}|Loss u: {avg_data_u:.3e}|Loss v: {avg_data_v:.3e}|Loss p: {avg_data_p:.3e}|LR: {current_lr:.1e}|")
         
         if epoch % 10 == 0:
-            logger.info(f"| Epoch: {epoch:4} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
-        else:
-            logger.debug(f"| Epoch: {epoch:4} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
+            logger.info(f"| Epoch: {epoch:4} | Loss: {avg_loss:.3e} | LR: {current_lr:.1e} |")
 
         # Guardado periódico
         if (epoch + 1) % num_epochs == 0:
@@ -212,7 +207,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': avg_loss,
             }, save_path)
-            print(f"Modelo guardado en: {save_path}")
+            logger.info(f"Modelo guardado en: {save_path}")
 
             metrics_path = save_path.with_name(f"history_{save_path.stem}").with_suffix(".mat")
             # Guardando métricas del modelo
@@ -226,6 +221,6 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
                             "p_loss": history["p_loss"],
                             "lr": history["lr"],
                         })
-            print(f"Métricas almacendas en : {metrics_path}")
+            logger.info(f"Métricas almacendas en : {metrics_path}")
 
-    print("Proceso completado.")
+    logger.info("Proceso completado.")

@@ -24,7 +24,7 @@ def setup_imperative_production_config(log_filename: str = "train_pinn.log") -> 
     )
     
     simple_formatter = logging.Formatter(
-        fmt='[%(asctime)s] %(levelname)s: %(message)s',
+        fmt='[%(asctime)s] (%(levelname)s) %(message)s',
         datefmt='%H:%M:%S'
     )
     

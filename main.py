@@ -48,7 +48,7 @@ def main():
         # "WS_val_idx": np.array([1, 2, 3, 5, 7, 9, 10, 11, 13, 14, 15, 16, 19]),
         }
     process_data.process_data(**kwargs)
-    print(f"{num_epochs=}")
+    # print(f"{num_epochs=}")
     train_pinn_brusselas(process_data, model=model, device=device, lamb=lamb, num_epochs=num_epochs, save_path=save_path)
 
     ...
