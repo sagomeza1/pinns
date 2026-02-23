@@ -59,9 +59,9 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
 
     # 3. Inicializar Modelo
     model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    # optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=5e-4)
     logger.debug(f"{optimizer=}")
-    # optimizer = optim.Adam(model.parameters(), lr=5e-4)
     
     # Si la pérdida no baja en 15 épocas, reduce el LR a la mitad - Scheduler robusto (ReduceLROnPlateau).
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, threshold=1e-1, cooldown=10, min_lr=1e-7)
@@ -160,30 +160,32 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         avg_data_u = epoch_data_u / batches
         avg_data_v = epoch_data_v / batches
         avg_data_p = epoch_data_p / batches
-        logger.debug(f"Número de batches: {batches}.")
+        if avg_ns < 1e-3:
+            logger.warning(f"Loss NS demasiado bajo: {avg_ns}.")
+        # logger.debug(f"Número de batches: {batches}.")
 
         # Actualizar el scheduler basado en la pérdida promedio
         scheduler.step(avg_loss)
         
         current_lr = optimizer.param_groups[0]['lr']        
-        logger.debug(f"{current_lr=}.")
+        # logger.debug(f"{current_lr=}.")
         
         # for name, param in model.named_parameters():
         #     if param.requires_grad:
         #         logger.debug(f"Capa: {name} | Valores: {param.data}.")
 
-        # # Ajuste adaptativo de Learning Rate (Lógica manual original)
-        # if avg_loss > 1e-1:
-        #     lr = 1e-3
-        # elif avg_loss > 3e-2:
-        #     lr = 1e-4
-        # elif avg_loss > 3e-3:
-        #     lr = 1e-5
-        # else:
-        #     lr = 1e-6
+        # Ajuste adaptativo de Learning Rate (Lógica manual original)
+        if avg_loss > 1e-1:
+            lr = 1e-3
+        elif avg_loss > 3e-2:
+            lr = 1e-4
+        elif avg_loss > 3e-3:
+            lr = 1e-5
+        else:
+            lr = 1e-6
         
-        # for param_group in optimizer.param_groups:
-        #     param_group['lr'] = lr
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
 
         # Guardar historial
         history['epoch'].append(epoch)
@@ -194,10 +196,9 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         history['v_loss'].append(float(avg_data_v) if isinstance(avg_data_v, torch.Tensor) else avg_data_v)
         history['lr'].append(float(current_lr) if isinstance(current_lr, torch.Tensor) else current_lr)
         
-        logger.debug(f"|Epoch: {epoch:4}|Loss: {avg_loss:.3e}|Loss ns: {avg_ns:.3e}|Loss u: {avg_data_u:.3e}|Loss v: {avg_data_v:.3e}|Loss p: {avg_data_p:.3e}|LR: {current_lr:.1e}|")
-        
         if epoch % 10 == 0:
             logger.info(f"| Epoch: {epoch:4} | Loss: {avg_loss:.3e} | LR: {current_lr:.1e} |")
+        logger.debug(f"|Epoch: {epoch:4}|Loss: {avg_loss:.3e}|Loss ns: {avg_ns:.3e}|Loss u: {avg_data_u:.3e}|Loss v: {avg_data_v:.3e}|Loss p: {avg_data_p:.3e}|LR: {current_lr:.1e}|")
 
         # Guardado periódico
         if (epoch + 1) % num_epochs == 0:
