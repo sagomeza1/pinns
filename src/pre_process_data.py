@@ -424,18 +424,19 @@ def main():
     # Configuración de los parámetros de conexión
     def filter_by_min_rows(metrics: StationMetrics) -> bool:
         
-        return metrics.row_count >= 2000
-        # return metrics.row_count >= 700
+        # return metrics.row_count >= 2000
+        return metrics.row_count >= 700
 
     kwargs = {
         'server'        : 'localhost\\SQLEXPRESS',
-        'database'      : 'EM_CAR3',
+        'database'      : 'EM_CAR',
         'interpolate'   : True,
         'criteria'      : filter_by_min_rows,
         'min_pressure'  : 800,
         'max_altitude'  : 1000,
         'seconds'       : 3600,
-        'save_file_path': DIR_DATA_PATH / "em_caribe3_20251001_20251231.parquet"
+        'save_file_path': DIR_DATA_PATH / "em_caribe_20251201_20251231_con_ol.parquet"
+        # 'save_file_path': DIR_DATA_PATH / "em_caribe3_20251001_20251231.parquet"
     }
     preprocess = DataPreprocessor(**kwargs)
     preprocess.load_data()
@@ -449,25 +450,27 @@ if __name__=="__main__":
         print("\nProceso interrumpido manualmente")
 # %%
 
-# DIR_DATA_PATH = Path('c:/Users/User/Documents/pinns/data/raw')
-# # Configuración de los parámetros de conexión
-# def filter_by_min_rows(metrics: StationMetrics) -> bool:
-#     return metrics.row_count >= 2000
-#     # return metrics.row_count >= 700
+DIR_DATA_PATH = Path('c:/Users/User/Documents/pinns/data/raw')
+# Configuración de los parámetros de conexión
+def filter_by_min_rows(metrics: StationMetrics) -> bool:
+    return metrics.row_count >= 2000
+    # return metrics.row_count >= 700
 
-# kwargs = {
-#     'server'        : 'localhost\\SQLEXPRESS',
-#     'database'      : 'EM_CAR3',
-#     'interpolate'   : True,
-#     'criteria'      : filter_by_min_rows,
-#     'min_pressure'  : 800,
-#     'max_altitude'  : 1000,
-#     'save_file_path': DIR_DATA_PATH / "em_caribe3_20251201_20251231.parquet"
-# }
-# preprocess = DataPreprocessor(**kwargs)
-# preprocess.load_data()
-# preprocess.process_data()
+kwargs = {
+    'server'        : 'localhost\\SQLEXPRESS',
+    'database'      : 'EM_CAR3',
+    # 'interpolate'   : True,
+    'criteria'      : filter_by_min_rows,
+    'min_pressure'  : 800,
+    'max_altitude'  : 1000,
+    'save_file_path': DIR_DATA_PATH / "em_caribe3_20251201_20251231.parquet"
+}
+preprocess = DataPreprocessor(**kwargs)
+preprocess.load_data()
+preprocess.process_data()
 
-# df_raw = preprocess.full_stations_data.copy()
-# df2 = preprocess.clean_full_stations.copy()
+df_raw = preprocess.full_stations_data.copy()
+df2 = preprocess.clean_full_stations.copy()
 # # %%
+
+# %%
