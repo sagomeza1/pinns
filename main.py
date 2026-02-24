@@ -18,9 +18,10 @@ log_file_path = logs_dir_path / f"train_pinn_{now()}.log"
 
 def main():
     
-    R = 0.1
-    num_epochs : int = 2000
-    lamb = 3.0
+    lr = 1e-5
+    R = 0.15
+    num_epochs : int = 1000
+    lamb = 1.0
     n_days = 93
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Usando dispositivo: {device}")
@@ -29,13 +30,13 @@ def main():
     data_path = Path().cwd() / "data" / "raw" / "weather_data.mat"
     data_path = Path().cwd() / "data" / "raw" / "weather_data.parquet"
     data_path = Path().cwd() / "data" / "raw" / "em_cundinamarca_boyaca_251201_251231_11ws_interpo.parquet"
-    data_path = Path().cwd() / "data" / "raw" / "em_caribe3_20251001_20251231.parquet"
     data_path = Path().cwd() / "data" / "raw" / "em_caribe_20251201_20251231.parquet"
+    data_path = Path().cwd() / "data" / "raw" / "em_caribe3_20251001_20251231.parquet"
     
     save_path = Path().cwd() / "models" / f"PINN_caribe3_epchos_{num_epochs}_lamb_{lamb}_R_{R}_days_{n_days}_{now()}.pth"
     
     model = PINN(input_dim=3, output_dim=3, hidden_neurons=600)
-    # print(model)
+    logger.debug(model)
 
     # process_data = ProcessDataBrusselas(data_path)
     process_data = ProcessDataColombia(data_path)
@@ -50,7 +51,7 @@ def main():
         }
     process_data.process_data(**kwargs)
     # print(f"{num_epochs=}")
-    train_pinn_brusselas(process_data, model=model, device=device, lamb=lamb, num_epochs=num_epochs, save_path=save_path)
+    train_pinn_brusselas(process_data, model=model, device=device, lamb=lamb, num_epochs=num_epochs, save_path=save_path, lr=lr)
 
     ...
 
