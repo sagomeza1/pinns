@@ -12,6 +12,9 @@ from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
 
+
+
+
 class ProcessDataBrusselas:
     '''
     Se crea la clase ProcessData para realizar el procesamiento
