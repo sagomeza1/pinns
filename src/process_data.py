@@ -1,13 +1,16 @@
 import os
+import logging
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import scipy.io as sio
 import datetime as dt
+import scipy.io as sio
 import matplotlib.pyplot as plt
 
+from pathlib import Path
 from datetime import datetime
 from typing import Optional, Any
+
+logger = logging.getLogger(__name__)
 
 class ProcessDataBrusselas:
     '''
@@ -42,6 +45,7 @@ class ProcessDataBrusselas:
         t0 = datetime.now()
         self.WS_data = pd.read_parquet(self.filepath, engine="fastparquet")
         self._tiempo_de_carga = datetime.now() - t0
+        logger.info(f"Información cargada en {self._tiempo_de_carga} s.")
 
     def process_data(self, **kwargs) -> None:
 
@@ -325,12 +329,10 @@ class ProcessDataColombia:
         '''
         if not self.filepath.exists():
             raise FileNotFoundError(f"No se encontró el archivo: {self.filepath}")
-        print("-"*70)
-        print(f"{'CARGA DE DATOS':^70}")
-        print(f'{f"Iniciando carga de {self.filepath.name} ":.<65}', end="")
         t0 = datetime.now()
         self.wsdata = pd.read_parquet(self.filepath, engine="fastparquet")
         self._tiempo_de_carga = datetime.now() - t0
+        logger.info(f"Cargado: {self.filepath.name}")
         # print(f"Documento cargado en {self._tiempo_de_carga:.2e} s.")
         self.codigo_estacion = self.wsdata["codigo_estacion"]
         self.latitud = self.wsdata["latitud"]
@@ -342,46 +344,33 @@ class ProcessDataColombia:
         self.vel_v = self.wsdata["vel_v"]
         self.temperatura = self.wsdata["temperatura"]
         self.numero_estaciones = self.wsdata['codigo_estacion'].nunique()
-        print(f"{' OK':.>5}")
-        print("-"*70)
+        record_days = int(np.nanmax(self.segundos) // (24*3600))
+        logger.info(f"Cantidad de registros {len(self.wsdata):,}.")
+        logger.debug(f"Información cargada en {self._tiempo_de_carga.total_seconds():.2e} s.")
+        logger.debug(f"Max segundos: {int(np.nanmax(self.segundos)):,} s. Días registrados: {record_days}")
+        logger.debug(f"Número estaciones: {self.numero_estaciones}.")
+
 
     def process_data(self, **kwargs) -> None:
 
-        print("-"*70)
-        print(f"{'PROCESAMIETO DE DATOS':^70}")
-
-        print(f"{'Coordenadas Cartesianas y Proyecciones ':.<65}", end="")
         self._process_coordinates_and_projections()
-        print(f"{' OK':.>5}")
-
-        print(f"{'Eliminar NaNs ':.<65}", end="")
         self._reshape_delete_nans()
-        print(f"{' OK':.>5}")
 
-        print(f"{'Selección de días y ordenamiento por coor ':.<65}", end="")
         # Filtrar kwargs: solo pasar los que acepta _filter_by_time_and_sort_by_coor
         filter_kwargs = {k: v for k, v in kwargs.items() if k in ['n_days', 'interval']}
         self._filter_by_time_and_sort_by_coor(**filter_kwargs)
-        print(f"{' OK':.>5}")
-
-        print(f"{'Corrección de presión a nivel del mar (ISA) ':.<65}", end="")
         # Corrección de presión a nivel del mar (ISA)
         self.P_WS = self.P_WS * (1 - 0.0065 * self.Z_WS / (self.Temp_WS + 273.15 + 0.0065 * self.Z_WS))**(-5.257)
-        print(f"{' OK':.>5}")
 
-        print(f"{'Centrado y creación de la malla ':.<65}", end="")
         centered_kwargs = {k: v for k, v in kwargs.items() if k in ['R', 'rho', 'nu']}
         self._centered_grid_adimensionalization(**centered_kwargs)
-        print(f"{' OK':.>5}")
 
-        print(f"{'Separar entre validación y entrenamiento ':.<65}", end="")
         # Filtrar kwargs: solo pasar los que acepta _split_validation_train
         split_kwargs = {k: v for k, v in kwargs.items() if k in ['WS_val_idx']}
         self._split_validation_train(**split_kwargs)
-        print(f"{' OK':.>5}")
 
         self._state_data_process = True
-        print("-"*70)
+        logger.info(f"Datos procesados.")
 
     def _process_coordinates_and_projections(self) -> None:
         # Coordenadas Cartesianas y Proyecciones
@@ -409,6 +398,8 @@ class ProcessDataColombia:
         self.V_WS = self._reshape_data(self.V_WS)
         self.P_WS = self._reshape_data(self.P_WS)
         self.Temp_WS = self._reshape_data(self.Temp_WS)
+        logger.debug(f"Nueva dimensión: {self.T_WS.shape}.")
+
 
         # Eliminar estaciones con NaNs en ubicación
         X_nan_index = np.argwhere(np.isnan(self.X_WS))
@@ -453,6 +444,7 @@ class ProcessDataColombia:
         self.P_WS = self.P_WS[:,seconds_days_args]
         self.Temp_WS = self.Temp_WS[:,seconds_days_args]
 
+        logger.debug(f"Días seleccionados: {n_days}")
         self.params["n_days"] = n_days
 
         # Selection of interval
@@ -534,6 +526,14 @@ class ProcessDataColombia:
         self.params['dim_T_PINN'] = dim_T_PINN
         self.params['R'] = R
 
+        logger.debug(f"{L=}")
+        logger.debug(f"{W=}")
+        logger.debug(f"{P0=}")
+        logger.debug(f"{rho=}")
+        logger.debug(f"{Re=}")
+        logger.debug(f"{dim_T_PINN=}")
+        logger.debug(f"{R=}")
+
 
 
     def _split_validation_train(self, WS_val_idx: np.ndarray = np.sort(np.random.choice(7, 3, replace=False))) -> None:
@@ -568,6 +568,14 @@ class ProcessDataColombia:
         }
 
         self.params["WS_val_idx"] = WS_val_idx
+        logger.debug(f"Cantidad de estaciones para validar: {len(WS_val_idx)}")
+        logger.debug(f"{WS_val_idx=}")
+        logger.debug(f"(t_min, t_max):{self._str_min_max(self.T_WS):>25}")
+        logger.debug(f"(p_min, p_max):{self._str_min_max(self.P_WS):>25}")
+        logger.debug(f"(u_min, u_max):{self._str_min_max(self.U_WS):>25}")
+        logger.debug(f"(v_min, v_max):{self._str_min_max(self.V_WS):>25}")
+        logger.debug(f"(x_min, x_max):{self._str_min_max(self.X_WS):>25}")
+        logger.debug(f"(y_min, y_max):{self._str_min_max(self.Y_WS):>25}")
 
     def return_data(self):
         if self._state_data_process:

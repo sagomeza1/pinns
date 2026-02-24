@@ -208,3 +208,15 @@ __marimo__/
 
 # test 
 test.*
+
+# gifs folder
+gifs/
+
+# models folder
+models/
+
+# logs folder
+logs/
+
+# vscode
+.vscode/
