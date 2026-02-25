@@ -20,9 +20,9 @@ def main():
     
     lr = 1e-5
     R = 0.15
-    num_epochs : int = 1000
-    lamb = 1.0
-    n_days = 93
+    num_epochs : int = 4000
+    lamb = 3.0
+    n_days = 30
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Usando dispositivo: {device}")
     

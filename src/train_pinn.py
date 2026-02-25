@@ -65,7 +65,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     logger.debug(f"{optimizer=}")
     
     # Si la pérdida no baja en 15 épocas, reduce el LR a la mitad - Scheduler robusto (ReduceLROnPlateau).
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=15, threshold=1e-2, cooldown=5, min_lr=1e-7)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, threshold=1e-3, cooldown=5, min_lr=1e-9)
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, threshold=1e-2)    
     logger.debug(f"{scheduler.mode=}")
     logger.debug(f"{scheduler.factor=}")
@@ -212,3 +212,43 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             logger.info(f"Métricas almacendas en : {metrics_path}, en la epoca {epoch}.")
 
     logger.info("Proceso completado.")
+
+
+# # Creación del Early Stopping    
+# import torch
+
+# class EarlyStopping:
+#     def __init__(self, patience=5, min_delta=0.0):
+#         """
+#         patience: número de épocas sin mejora antes de detener
+#         min_delta: mejora mínima requerida para resetear el contador
+#         """
+#         self.patience = patience
+#         self.min_delta = min_delta
+#         self.best_loss = None
+#         self.counter = 0
+#         self.early_stop = False
+
+#     def __call__(self, val_loss):
+#         if self.best_loss is None:
+#             self.best_loss = val_loss
+#         elif val_loss < self.best_loss - self.min_delta:
+#             self.best_loss = val_loss
+#             self.counter = 0
+#         else:
+#             self.counter += 1
+#             if self.counter >= self.patience:
+#                 self.early_stop = True
+                
+# early_stopping = EarlyStopping(patience=5, min_delta=0.001)
+
+# for epoch in range(100):
+#     train_one_epoch(model, train_loader, optimizer, criterion)
+#     val_loss = evaluate(model, val_loader, criterion)
+
+#     print(f"Epoch {epoch+1}, Validation Loss: {val_loss:.4f}")
+
+#     early_stopping(val_loss)
+#     if early_stopping.early_stop:
+#         print("Deteniendo entrenamiento por early stopping")
+#         break
