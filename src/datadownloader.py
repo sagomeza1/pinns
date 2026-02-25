@@ -1,3 +1,4 @@
+import sys
 import pyodbc
 import logging
 import requests
@@ -5,6 +6,7 @@ import pandas as pd
 
 from io import StringIO
 from abc import ABC, abstractmethod
+from typing import Tuple, Optional, Generator, List, Dict
 
 
 logger = logging.getLogger(__name__)
@@ -23,13 +25,13 @@ class DataSaver(ABC):
 
 class ManagerDownSaveData(ABC):
 
-    def __init__(self, downloader: DataLoader, saver: DataSaver):
-        self.loader = downloader
+    def __init__(self, loader: DataLoader, saver: DataSaver):
+        self.loader = loader
         self.saver = saver
 
     @abstractmethod
     def run(self):
-        for chunk_df in self.downloader.fetch_all_chunks():
+        for chunk_df in self.loader.fetch_all_chunks():
             if not chunk_df.empty():
                 self.saver.save(chunk_df)
                 logger.info(f"Procesados {len(chunk_df)} registros.")
@@ -83,17 +85,17 @@ class APIDataDownloader(DataLoader):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", # Evita el bloqueo 403 por User-Agent
         }
 
-    def fetch_all_chunks(self) -> pd.DataFrame:
+    def fetch_all_chunks(self):
         offset = 0
         while True:
-            pass
-            response = self._request_with_retries()
+            soql_query = f"{self.soql_base_query} LIMIT {self.limit} OFFSET {offset}"
             try:
+                response = self._request_with_retries()
                 if response is not None:
                     df_chunk = pd.read_csv(StringIO(response.text), dtype=str)
                     if df_chunk.empty:
                         logger.info("Descarga finalizada: No hay más datos para consultar.")
-                        return None
+                        break
                     
                     else:
                         # Seleccionar solo las 12 columnas necesarias en el orden correcto
@@ -112,8 +114,8 @@ class APIDataDownloader(DataLoader):
 
                         # Reemplazar NaN con None para que pyodbc lo maneje correctamente
                         df_chunk = df_chunk.where(pd.notna(df_chunk), None)
-
-                        return df_chunk
+                        yield df_chunk
+                        offset += self.limit
                 else:
                     raise ValueError(f"{response=}")
 
@@ -122,33 +124,28 @@ class APIDataDownloader(DataLoader):
             ...
 
     def _request_with_retries(self):
-        soql_query = f"{self.soql_base_query} LIMIT {self.limit} OFFSET {self.of}"
+        soql_query = f"{self.soql_base_query} LIMIT {self.limit} OFFSET {offset}"
         for attempt in range(self.max_retries):
             try:
                 response = requests.get(self.url, headers=self.headers, params={"query":soql_query})
                 if response.status_code == 200:
                     return response
                 else:
-                    logger.error(f"Error {response.status_code}: {response.text}")
+                    logger.warning(f"Error {response.status_code}: {response.text}")
                     return None
                 ...
             except Exception as e:
-                logger.error(f"Ocurrio un error: {e}")
+                logger.error(f"Ocurrio un error realizando la solicitud: {e}")
+                raise
         ...
 
-#%%
-import pandas as pd
-def ddf(x:dict) -> pd.DataFrame:
-    if "a" in x:
-        return pd.DataFrame(x)
-    else:
-        return None
-    
-if ddf({"d":[0,1]}) is not None:
-    print("texto")
-else:
-    print("testo")
+def main():
+    pass
 
-h = None
-print(f"{h=}")
-
+if __name__=="__main__":
+    sys.path.append("..")
+    from config.logging_config import setup_imperative_production_config
+    from logging import getLogger
+    setup_imperative_production_config()
+    logger = getLogger(__name__)
+    main()
