@@ -139,6 +139,14 @@ class APIDataDownloader(DataLoader):
                 raise
         ...
 
+class CSVDownloader(DataLoader):
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def fetch_all_chunks(self):
+        # Un CSV no tiene offset, así que solo hace yield una vez
+        yield pd.read_csv(self.file_path)
+
 def main():
     pass
 

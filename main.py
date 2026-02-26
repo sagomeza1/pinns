@@ -9,7 +9,7 @@ from src.train_pinn import train_pinn_brusselas
 from src.process_data import ProcessDataBrusselas , ProcessDataColombia
 
 from config.basic_func import now
-from config.logging_config import setup_imperative_production_config
+from config.logging_config import setup_production_config
 
 
 logs_dir_path = Path().cwd() / "logs"
@@ -58,7 +58,7 @@ def main():
 
 
 if __name__ == "__main__":
-    setup_imperative_production_config(log_filename=log_file_path)
+    setup_production_config(log_file_name=log_file_path)
     logger = logging.getLogger(__name__)
     try:
         main()
