@@ -1,0 +1,7 @@
+db:
+  name: "ws_station"
+  num_bases: 12
+lista:
+  - "elem2"
+  - "elemt"
+epochs: 2000

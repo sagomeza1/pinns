@@ -1,0 +1,31 @@
+# Configuración gel getter
+getter_config:
+  url:
+    presion: 'link1'
+    velocidad: 'link2'
+    direccion: 'link3'
+    temperatura: 'link3'
+  soql_base_query: |
+    SELECT
+    `codigoestacion`, `codigosensor`, `fechaobservacion`, `valorobservado`,
+    `nombreestacion`, `departamento`, `municipio`, `zonahidrografica`,
+    `latitud`, `longitud`, `descripcionsensor`, `unidadmedida`
+    WHERE
+    `fechaobservacion` BETWEEN "2025-10-01T00:00:00" :: floating_timestamp
+                        AND     "2025-12-31T23:59:59" :: floating_timestamp
+    AND (
+        caseless_eq(`departamento`, "ATLANTICO")
+        OR caseless_eq(`departamento`, "BOLIVAR")
+        OR caseless_eq(`departamento`, "MAGDALENA")
+        OR caseless_eq(`departamento`, "SUCRE")
+        OR caseless_eq(`departamento`, "CORDOBA")
+    )
+# Configuración del storer
+storer_config:
+  db: caribe
+  collection:
+    - presion
+    - velocidad
+    - direccion
+    - temperatura
+  
