@@ -18,7 +18,8 @@ class MongoStorer(DataStorer):
         self.uri = uri
         self.db = db
         self.collection = collection
-        self.total_stored_docs = 0
+        self._total_stored_docs = 0
+        logger.debug("MongoStorer OK")
 
     def store(self, docs: List[Dict]):
 
@@ -29,8 +30,8 @@ class MongoStorer(DataStorer):
             collection = db[self.collection]
             # Carga a la base de datos
             collection.insert_many(docs)
-            self.total_stored_docs += len(docs)
-            logger.info(f"Insertados {self.total_stored_docs} docs.")
+            self._total_stored_docs += len(docs)
+            logger.info(f"Insertados {self._total_stored_docs} docs.")
 
         except Exception as e:
             logger.error(f"Se presenta error cargando docs a la MongoDB: {e}")

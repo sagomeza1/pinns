@@ -29,17 +29,18 @@ class APIGetter(WSDataGetter):
                  url:str,
                  soql_base_query:str,
                  token:Optional[str] = None,
+                 limit:Optional[int] = None,
+                 max_retries:Optional[int] = None,
                  tipo:str = 'API',
-                 limit:int = 1000,
-                 max_retries:int = 3,
                  ):
 
         super().__init__(tipo)
         self.url = url
         self.soql_base_query = soql_base_query
         self.token = token
-        self.limit = limit
-        self.max_retries = max_retries
+        self.limit = limit if limit is not None else 1000
+        self.max_retries = max_retries if max_retries is not None else 3
+        logger.debug("APIGetter OK")
 
     def get_data(self):
         """Función que itera la solicitud a la API"""

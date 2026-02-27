@@ -1,17 +1,25 @@
-# Configuración gel getter
+version: 0.1
+detalle: 'Caribe 1 diciembre - 31 diciembre (2025)'
+
+# Configuración del orquestador
+orchestrador_config:
+  API_MongoDB_manager: true
+
+
+# Configuración del getter
+urls:
+  presion: 'https://www.datos.gov.co/api/v3/views/62tk-nxj5/query.json'
+  velocidad: 'https://www.datos.gov.co/api/v3/views/sgfv-3yp8/query.json'
+  direccion: 'https://www.datos.gov.co/api/v3/views/kiw7-v9ta/query.json'
+  temperatura: 'https://www.datos.gov.co/api/v3/views/sbwg-7ju4/query.json'
 getter_config:
-  url:
-    presion: 'link1'
-    velocidad: 'link2'
-    direccion: 'link3'
-    temperatura: 'link3'
   soql_base_query: |
     SELECT
     `codigoestacion`, `codigosensor`, `fechaobservacion`, `valorobservado`,
     `nombreestacion`, `departamento`, `municipio`, `zonahidrografica`,
     `latitud`, `longitud`, `descripcionsensor`, `unidadmedida`
     WHERE
-    `fechaobservacion` BETWEEN "2025-10-01T00:00:00" :: floating_timestamp
+    `fechaobservacion` BETWEEN "2025-12-01T00:00:00" :: floating_timestamp
                         AND     "2025-12-31T23:59:59" :: floating_timestamp
     AND (
         caseless_eq(`departamento`, "ATLANTICO")
@@ -23,7 +31,7 @@ getter_config:
 # Configuración del storer
 storer_config:
   db: caribe
-  collection:
+  collections:
     - presion
     - velocidad
     - direccion
