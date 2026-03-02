@@ -3,20 +3,30 @@ import logging
 import datetime
 import numpy as np
 
-from pathlib import Path
 from src.model_pinn import PINN
 from src.train_pinn import train_pinn_brusselas
 from src.process_data import ProcessDataBrusselas , ProcessDataColombia
 
-from config.basic_func import now
-from config.logging_config import setup_production_config
-
-
 logs_dir_path = Path().cwd() / "logs"
 logs_dir_path.mkdir(parents=True, exist_ok=True)
 log_file_path = logs_dir_path / f"train_pinn_{now()}.log"
+#-------------------------------------------------------------------------------
+from pathlib import Path
+
+from config.basic_func import now
+from config.logging_config import setup_production_config
+
+from src.orchestrador import Orchestrador
+
+Path().cwd() / 'config' / 'config.yaml'
 
 def main():
+    orchestrador = Orchestrador()
+
+    pass
+
+
+def main_old():
     
     lr = 1e-5
     R = 0.15

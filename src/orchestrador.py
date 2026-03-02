@@ -20,7 +20,7 @@ class Orchestrador:
         self.config_path = config_path
         pass
 
-    def api_mongo(self):
+    def api_to_mongo(self):
         getter_config, storer_config = load_orchestrador_config(self.config_path)
 
         for collection in storer_config.collections:
@@ -55,7 +55,7 @@ def main():
     path = Path().cwd() / "config" / "data.yaml"
     logger.debug(f"{path.exists()=}")
     orchestrador = Orchestrador(path)
-    orchestrador.api_mongo()
+    orchestrador.api_to_mongo()
 
 if __name__=='__main__':
     main()
