@@ -9,12 +9,12 @@ from src.process_data import ProcessDataBrusselas , ProcessDataColombia
 
 def now():
     t0 = datetime.datetime.now()
-    return f"{str(t0.year)[-2:]}{t0.month:02}{t0.day:02}{t0.hour:02}{t0.minute:02}"
+    return f"{str(t0.year)[-2:]}{t0.month:02}{t0.day:02}_{t0.hour:02}{t0.minute:02}"
 
 def main():
     
-    num_epochs : int = 2000
-    lamb = 3.0
+    num_epochs : int = 4000
+    lamb = 3
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Usando dispositivo: {device}")
     
@@ -24,9 +24,10 @@ def main():
     data_path = Path().cwd() / "data" / "raw" / "em_cundinamarca_boyaca_251201_251231_11ws_interpo.parquet"
     data_path = Path().cwd() / "data" / "raw" / "em_caribe_20251201_20251231.parquet"
     
-    save_path = Path().cwd() / "models" / f"PINN_caribe_epchos_{num_epochs}_lamb_{lamb}_{now()}.pth"
+    save_path = Path().cwd() / "models" / f"PINN_24_600_caribe_epchos_{num_epochs}_lamb_{lamb}_{now()}.pth"
+    save_path = Path().cwd() / "models" / f"PINN_12_1200_caribe_epchos_{num_epochs}_lamb_{lamb}_{now()}.pth"
     
-    model = PINN(input_dim=3, output_dim=3, hidden_neurons=600)
+    model = PINN(input_dim=3, output_dim=3, hidden_neurons=1200)
     # print(model)
 
     # process_data = ProcessDataBrusselas(data_path)

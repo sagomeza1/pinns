@@ -182,13 +182,13 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             print(f"| Epoch: {epoch:4} | Loss: {avg_loss:.3e} | Loss ns: {avg_ns:.3e} | Loss u: {avg_data_u:.3e} | Loss v: {avg_data_v:.3e} | Loss p: {avg_data_p:.3e} | LR: {current_lr:.1e} |")
 
         # Guardado periódico
-        if (epoch + 1) % num_epochs == 0:
+        if (epoch + 1) % (num_epochs // 8) == 0:
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': avg_loss,
-            }, save_path)
+            }, save_path.with_name(f"{save_path.stem}_{epoch + 1}").with_suffix(save_path.suffix))
             print(f"Modelo guardado en: {save_path}")
 
             metrics_path = save_path.with_name(f"history_{save_path.stem}").with_suffix(".mat")
@@ -206,3 +206,9 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             print(f"Métricas almacendas en : {metrics_path}")
 
     print("Proceso completado.")
+    
+    
+#%%
+
+1+1
+# %%
