@@ -132,7 +132,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             
             # CAMBIO 4: Gradient Clipping
             # Esto evita que un gradiente explosivo rompa los pesos y cause el salto a 1.0
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
             
             optimizer.step()
 
@@ -158,13 +158,13 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         
         # Ajuste adaptativo de Learning Rate (Lógica manual original)
         if avg_loss > 1e-1:
-            lr = 1e-5
+            lr = 1e-3
         elif avg_loss > 3e-2:
-            lr = 1e-6
+            lr = 1e-4
         elif avg_loss > 3e-3:
-            lr = 1e-7
+            lr = 1e-5
         else:
-            lr = 1e-8
+            lr = 1e-6
         
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr

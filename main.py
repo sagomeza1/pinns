@@ -23,6 +23,7 @@ def main():
     data_path = Path().cwd() / "data" / "raw" / "weather_data.parquet"
     data_path = Path().cwd() / "data" / "raw" / "em_cundinamarca_boyaca_251201_251231_11ws_interpo.parquet"
     data_path = Path().cwd() / "data" / "raw" / "em_caribe_20251201_20251231.parquet"
+    data_path = Path().cwd() / "data" / "raw" / "em_caribe_20251201_20251231.parquet"
     
     save_path = Path().cwd() / "models" / f"PINN_24_600_caribe_epchos_{num_epochs}_lamb_{lamb}_{now()}.pth"
     save_path = Path().cwd() / "models" / f"PINN_12_1200_caribe_epchos_{num_epochs}_lamb_{lamb}_{now()}.pth"
