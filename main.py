@@ -35,7 +35,7 @@ def main():
     
     process_data.load_data()
     kwargs = {
-        "R":0.1,
+        "R":0.2,
         "n_days":30,
         "interval":1,
         "WS_val_idx": np.array([4, 8, 16, 18]),
