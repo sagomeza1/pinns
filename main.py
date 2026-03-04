@@ -14,7 +14,7 @@ def now():
 def main():
     
     num_epochs : int = 4000
-    lamb = 3
+    lamb = 2
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Usando dispositivo: {device}")
     
@@ -36,7 +36,7 @@ def main():
     
     process_data.load_data()
     kwargs = {
-        "R":0.2,
+        "R":0.3,
         "n_days":30,
         "interval":1,
         "WS_val_idx": np.array([4, 8, 16, 18]),

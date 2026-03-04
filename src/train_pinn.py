@@ -158,13 +158,13 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         
         # Ajuste adaptativo de Learning Rate (Lógica manual original)
         if avg_loss > 1e-1:
-            lr = 1e-3
-        elif avg_loss > 3e-2:
-            lr = 1e-4
-        elif avg_loss > 3e-3:
             lr = 1e-5
-        else:
+        elif avg_loss > 3e-2:
             lr = 1e-6
+        elif avg_loss > 3e-3:
+            lr = 1e-7
+        else:
+            lr = 1e-8
         
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
