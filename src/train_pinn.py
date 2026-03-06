@@ -189,7 +189,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': avg_loss,
             }, save_path.with_name(f"{save_path.stem}_{epoch + 1}").with_suffix(save_path.suffix))
-            print(f"Modelo guardado en: {save_path}")
+            print(f"Modelo guardado en: {save_path.with_name(f"{save_path.stem}_{epoch + 1}").with_suffix(save_path.suffix)}")
 
             metrics_path = save_path.with_name(f"history_{save_path.stem}").with_suffix(".mat")
             # Guardando métricas del modelo
