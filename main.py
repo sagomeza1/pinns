@@ -14,7 +14,7 @@ def now():
 def main():
     
     num_epochs : int = 2000
-    lamb = 1.5
+    lamb = 3.0
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Usando dispositivo: {device}")
     

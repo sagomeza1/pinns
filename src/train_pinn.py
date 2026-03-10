@@ -64,7 +64,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     optimizer_adam = optim.Adam(model.parameters(), lr=1e-5)
     
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer_adam, mode='min', factor=0.5, patience=50, threshold=1e-5)
-    history = {'epoch': [],'loss': [], 'ns_loss': [], 'p_loss': [], 'u_loss': [], 'v_loss': [], 'lr': []}
+    history = {'epoch': [],'loss': [], 'ns_loss': [], 'p_loss': [], 'u_loss': [], 'v_loss': [], 'lr': [], }
 
     print(f" Fase 1: Entrenamiento con Adam en {str(device).upper()} ".center(70, "="))
     
