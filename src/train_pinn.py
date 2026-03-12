@@ -63,7 +63,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     model.to(device)
     optimizer_adam = optim.Adam(model.parameters(), lr=1e-5)
     
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer_adam, mode='min', factor=0.5, patience=50, threshold=1e-5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer_adam, mode='min', factor=0.5, patience=50, threshold=1e-3)
     history = {'epoch': [],'loss': [], 'ns_loss': [], 'p_loss': [], 'u_loss': [], 'v_loss': [], 'lr': [], }
 
     print(f" Fase 1: Entrenamiento con Adam en {str(device).upper()} ".center(70, "="))
@@ -90,9 +90,11 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             loss_v = loss_data_variable(v_pred, v_true)
             loss_p = loss_data_variable(p_pred, p_true)
             
-            with torch.no_grad():
-                denom = (loss_physics + loss_u + loss_v + loss_p)
-            final_loss = (loss_physics**2 + loss_u**2 + loss_v**2 + loss_p**2) / denom if denom > 1e-9 else (loss_physics + loss_u + loss_v + loss_p)
+            final_loss = (loss_physics**2 + loss_u**2 + loss_v**2 + loss_p**2) / (loss_physics + loss_u + loss_v + loss_p)
+            
+            # with torch.no_grad():
+            #     denom = (loss_physics + loss_u + loss_v + loss_p)
+            # final_loss = (loss_physics**2 + loss_u**2 + loss_v**2 + loss_p**2) / denom if denom > 1e-9 else (loss_physics + loss_u + loss_v + loss_p)
 
             final_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
