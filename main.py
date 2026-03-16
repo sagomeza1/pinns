@@ -19,7 +19,7 @@ log_file_path = logs_dir_path / f"train_pinn_{now()}.log"
 def main():
     
     num_epochs : int = 4000
-    lr = 1e-5
+    lr = 1e-3
     R = 0.15
     lamb = 3.0
     n_days = 30

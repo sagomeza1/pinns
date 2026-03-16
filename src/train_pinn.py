@@ -60,7 +60,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     logger.debug(f"{optimizer=}")
     
     # Si la pérdida no baja en 15 épocas, reduce el LR a la mitad - Scheduler robusto (ReduceLROnPlateau).
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=50, threshold=1e-3)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.3162, patience=50, threshold=1e-2)
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, threshold=1e-2)    
     logger.debug(f"{scheduler.mode=}")
     logger.debug(f"{scheduler.factor=}")
@@ -72,6 +72,8 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     
     # Listas para historial
     history = {'epoch': [],'loss': [], 'ns_loss': [], 'p_loss': [], 'u_loss': [], 'v_loss': [], 'lr': []}
+    
+    pre_lr = 0.0
 
     logger.info("Iniciando entrenamiento")
     for epoch in range(num_epochs):
@@ -130,8 +132,9 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         avg_data_u = epoch_data_u / batches
         avg_data_v = epoch_data_v / batches
         avg_data_p = epoch_data_p / batches
-        if avg_ns < 1e-7:
-            logger.warning(f"Loss NS demasiado bajo: {avg_ns}.")
+        if avg_ns < 1e-5:
+            logger.warning(f"Loss NS demasiado bajo: {avg_ns:.3e}.")
+                
         # logger.debug(f"Número de batches: {batches}.")
 
         # Actualizar el scheduler basado en la pérdida promedio
@@ -139,6 +142,9 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         
         # current_lr
         lr = optimizer.param_groups[0]['lr']        
+        if pre_lr != lr:
+            logger.info(f"Cambio de lr: {pre_lr:.1e} -> {lr:.1e}.")
+        pre_lr = lr
         
         # Guardar historial
         history['epoch'].append(epoch)
@@ -155,14 +161,14 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
 
         # Guardado periódico
         if (epoch + 1) % (num_epochs // 4) == 0:
+            epoch_save_path = save_path.with_name(f"{save_path.stem}_epoch_{epoch + 1}").with_suffix(save_path.suffix)
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': avg_loss,
-            }, save_path)
-            logger.info(f"Modelo guardado en: {save_path}, en la epoca {epoch} con loss {avg_loss}.")
-
+            }, epoch_save_path)
+            logger.info(f"Modelo guardado en: {epoch_save_path}.")
             metrics_path = save_path.with_name(f"history_{save_path.stem}").with_suffix(".mat")
             # Guardando métricas del modelo
             sio.savemat(metrics_path,
@@ -175,7 +181,8 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
                             "p_loss": history["p_loss"],
                             "lr": history["lr"],
                         })
-            logger.info(f"Métricas almacendas en : {metrics_path}, en la epoca {epoch}.")
+            logger.info(f"Métricas almacendas en : {metrics_path}.")
+            logger.info(f"En la epoca {epoch + 1} con loss {avg_loss:.2e}.")
 
     logger.info("Proceso completado.")
 
