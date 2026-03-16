@@ -31,26 +31,33 @@ class PINN(nn.Module):
         # Capa de entrada
         self.input_layer = GammaBiasLayer(input_dim, hidden_neurons)
         
-        # Capas ocultas (8 capas según lógica del script original: 2 * (input + output))
-        # El script original calcula layers dinámicamente.
-        # layers = [3] + (2*(3+3))*[neurons] + [3] => [3, 600, ..., 600, 3] -> 12 hidden layers
-        n_layers = 2 * (input_dim + output_dim) 
-        self.hidden_layers = nn.ModuleList([
-            GammaBiasLayer(hidden_neurons, hidden_neurons) for _ in range(n_layers - 1)
+        # 7 capas ocultas con activación Tanh (la capa de entrada es la primera, para un total de 8)
+        self.tanh_layers = nn.ModuleList([
+            GammaBiasLayer(hidden_neurons, hidden_neurons) for _ in range(7)
+        ])
+        
+        # 4 capas ocultas con activación Lineal
+        self.linear_layers = nn.ModuleList([
+            GammaBiasLayer(hidden_neurons, hidden_neurons) for _ in range(4)
         ])
         
         # Capa de salida
         self.output_layer = GammaBiasLayer(hidden_neurons, output_dim)
         
-        self.activation = nn.Tanh()
+        self.activation_tanh = nn.Tanh()
 
     def forward(self, t, x, y):
         # Concatenar entradas
         inputs = torch.cat([t, x, y], dim=1)
         
-        h = self.activation(self.input_layer(inputs))
-        for layer in self.hidden_layers:
-            h = self.activation(layer(h))
+        # Primeras 8 capas con Tanh
+        h = self.activation_tanh(self.input_layer(inputs))
+        for layer in self.tanh_layers:
+            h = self.activation_tanh(layer(h))
+        
+        # Últimas 4 capas con activación Lineal (identidad)
+        for layer in self.linear_layers:
+            h = layer(h)
         
         output = self.output_layer(h)
         return output # Retorna [u, v, p]

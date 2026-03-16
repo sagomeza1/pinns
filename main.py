@@ -18,9 +18,9 @@ log_file_path = logs_dir_path / f"train_pinn_{now()}.log"
 
 def main():
     
+    num_epochs : int = 4000
     lr = 1e-5
     R = 0.15
-    num_epochs : int = 4000
     lamb = 3.0
     n_days = 30
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -36,7 +36,7 @@ def main():
     
     save_path = Path().cwd() / "models" / f"PINN_caribe3_epchos_{num_epochs}_lamb_{lamb}_R_{R}_days_{n_days}_{now()}.pth"
     
-    model = PINN(input_dim=3, output_dim=3, hidden_neurons=600)
+    model = PINN(input_dim=3, output_dim=3, hidden_neurons=1200)
     logger.debug(model)
 
     # process_data = ProcessDataBrusselas(data_path)
@@ -52,7 +52,7 @@ def main():
         }
     process_data.process_data(**kwargs)
     # print(f"{num_epochs=}")
-    train_pinn_brusselas(process_data, model=model, device=device, lamb=lamb, num_epochs=num_epochs, save_path=save_path, lr=lr)
+    train_pinn_brusselas(process_data, model=model, device=device, lr=lr, lamb=lamb, num_epochs=num_epochs, save_path=save_path)
 
     ...
 

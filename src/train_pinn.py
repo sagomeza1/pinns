@@ -23,7 +23,7 @@ mse = nn.MSELoss()
 
 # Configuración del dispositivo
 
-def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str, lr:float = 1e-3, lamb:float = 2.0, num_epochs:int = 1000, save_path = Path('PINN_brusselas.pth')):
+def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str, lr:float = 1e-5, lamb:float = 2.0, num_epochs:int = 1000, save_path = Path('PINN_brusselas.pth')):
     # 1. Cargar datos
     # Asegúrate de tener el archivo .mat en la carpeta correcta o ajustar el path
     try:
@@ -38,12 +38,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     logger.debug(f"{lamb=}.")
 
     # 2. Preparar Datasets y DataLoaders
-    # Dataset de Estaciones (Datos observados)
     station_dataset = StationDataset(train_data)
-    
-    # Dataset de Colocación (Grilla para física + puntos de estaciones para física también)
-    # El original usa t_eqns (PINN grid) y t_eqns_ref (Estaciones grid).
-    # Combinaremos ambos para la física.
     grid_dataset = CollocationDataset(pinn_grid)
     
     # Cálculos de tamaño de lote (replican lógica original)
@@ -65,7 +60,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     logger.debug(f"{optimizer=}")
     
     # Si la pérdida no baja en 15 épocas, reduce el LR a la mitad - Scheduler robusto (ReduceLROnPlateau).
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, threshold=1e-3, cooldown=5, min_lr=1e-9)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=50, threshold=1e-3)
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, threshold=1e-2)    
     logger.debug(f"{scheduler.mode=}")
     logger.debug(f"{scheduler.factor=}")
@@ -99,14 +94,11 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             # Datos de Colocación (Física)
             t_f, x_f, y_f = [b.to(device) for b in batch_gr]
             
-            # También usamos los puntos de estaciones para la física (como en el original 'NS_data')
-            t_f_ref, x_f_ref, y_f_ref = t_u, x_u, y_u
-
             optimizer.zero_grad()
             
             # 1. Pérdida Física (NS equations)
             loss_ns_grid = loss_navier_stokes(model, t_f, x_f, y_f)
-            loss_ns_data = loss_navier_stokes(model, t_f_ref, x_f_ref, y_f_ref)
+            loss_ns_data = loss_navier_stokes(model, t_u, x_u, y_u)
             loss_physics = lamb * (loss_ns_grid + loss_ns_data)
 
             # 2. Pérdida de Datos (Predicción vs Real)
@@ -118,23 +110,10 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             loss_v = loss_data_variable(v_pred, v_true)
             loss_p = loss_data_variable(p_pred, p_true)
             
-            # loss_data = loss_u + loss_v + loss_p
-
-            # 3. Pérdida Total (Suma ponderada compleja del original)
-            # El original usa: (NS^2 + Data^2) / Sum(Losses). 
-            # Esto es inusual, es una especie de normalización dinámica. Replicamos:
-            # total_sum = loss_physics + loss_data
-            # final_loss = (loss_physics**2 + loss_u**2 + loss_v**2 + loss_p**2) / total_sum
-            
-            # final_loss = total_sum
             final_loss = (loss_physics**2 + loss_u**2 + loss_v**2 + loss_p**2) / (loss_physics + loss_u + loss_v + loss_p)
 
             final_loss.backward()
-            
-            # CAMBIO 4: Gradient Clipping
-            # Esto evita que un gradiente explosivo rompa los pesos y cause el salto a 1.0
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
             optimizer.step()
 
             # Acumular métricas
@@ -151,29 +130,16 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
         avg_data_u = epoch_data_u / batches
         avg_data_v = epoch_data_v / batches
         avg_data_p = epoch_data_p / batches
-        if avg_ns < 1e-3:
+        if avg_ns < 1e-7:
             logger.warning(f"Loss NS demasiado bajo: {avg_ns}.")
         # logger.debug(f"Número de batches: {batches}.")
 
         # Actualizar el scheduler basado en la pérdida promedio
         scheduler.step(avg_loss)
         
-        # current_lr = optimizer.param_groups[0]['lr']        
+        # current_lr
         lr = optimizer.param_groups[0]['lr']        
         
-        # # Ajuste adaptativo de Learning Rate (Lógica manual original)
-        # if avg_loss > 1e-1:
-        #     lr = 1e-5
-        # elif avg_loss > 3e-2:
-        #     lr = 1e-6
-        # elif avg_loss > 3e-3:
-        #     lr = 1e-7
-        # else:
-        #     lr = 1e-8
-        
-        # for param_group in optimizer.param_groups:
-        #     param_group['lr'] = lr
-
         # Guardar historial
         history['epoch'].append(epoch)
         history['loss'].append(float(avg_loss) if isinstance(avg_loss, torch.Tensor) else avg_loss)
@@ -213,42 +179,3 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
 
     logger.info("Proceso completado.")
 
-
-# # Creación del Early Stopping    
-# import torch
-
-# class EarlyStopping:
-#     def __init__(self, patience=5, min_delta=0.0):
-#         """
-#         patience: número de épocas sin mejora antes de detener
-#         min_delta: mejora mínima requerida para resetear el contador
-#         """
-#         self.patience = patience
-#         self.min_delta = min_delta
-#         self.best_loss = None
-#         self.counter = 0
-#         self.early_stop = False
-
-#     def __call__(self, val_loss):
-#         if self.best_loss is None:
-#             self.best_loss = val_loss
-#         elif val_loss < self.best_loss - self.min_delta:
-#             self.best_loss = val_loss
-#             self.counter = 0
-#         else:
-#             self.counter += 1
-#             if self.counter >= self.patience:
-#                 self.early_stop = True
-                
-# early_stopping = EarlyStopping(patience=5, min_delta=0.001)
-
-# for epoch in range(100):
-#     train_one_epoch(model, train_loader, optimizer, criterion)
-#     val_loss = evaluate(model, val_loader, criterion)
-
-#     print(f"Epoch {epoch+1}, Validation Loss: {val_loss:.4f}")
-
-#     early_stopping(val_loss)
-#     if early_stopping.early_stop:
-#         print("Deteniendo entrenamiento por early stopping")
-#         break
