@@ -23,7 +23,7 @@ mse = nn.MSELoss()
 
 # Configuración del dispositivo
 
-def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str, lr:float = 1e-5, lamb:float = 2.0, num_epochs:int = 1000, save_path = Path('PINN_brusselas.pth')):
+def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str, lr:float = 1e-5, lamb:float = 2.0, num_epochs:int = 1000, save_path = Path('PINN_brusselas.pth'), max_norm=1.0):
     # 1. Cargar datos
     # Asegúrate de tener el archivo .mat en la carpeta correcta o ajustar el path
     try:
@@ -59,9 +59,9 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     # optimizer = optim.Adam(model.parameters(), lr=1e-5)
     logger.debug(f"{optimizer=}")
     
-    # Si la pérdida no baja en 15 épocas, reduce el LR a la mitad - Scheduler robusto (ReduceLROnPlateau).
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.3162, patience=50, threshold=1e-2)
-    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, threshold=1e-2)    
+    history = {'epoch': [],'loss': [], 'ns_loss': [], 'p_loss': [], 'u_loss': [], 'v_loss': [], 'lr': []}
+
     logger.debug(f"{scheduler.mode=}")
     logger.debug(f"{scheduler.factor=}")
     logger.debug(f"{scheduler.threshold_mode=}")
@@ -69,9 +69,9 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     logger.debug(f"{scheduler.patience=}")
     logger.debug(f"{scheduler.cooldown=}")
     logger.debug(f"{scheduler.min_lrs=}")
+    logger.debug(f"{max_norm=}")
     
     # Listas para historial
-    history = {'epoch': [],'loss': [], 'ns_loss': [], 'p_loss': [], 'u_loss': [], 'v_loss': [], 'lr': []}
     
     pre_lr = 0.0
 
@@ -115,7 +115,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
             final_loss = (loss_physics**2 + loss_u**2 + loss_v**2 + loss_p**2) / (loss_physics + loss_u + loss_v + loss_p)
 
             final_loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=max_norm)
             optimizer.step()
 
             # Acumular métricas

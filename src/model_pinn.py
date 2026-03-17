@@ -32,7 +32,7 @@ class PINN(nn.Module):
         self.input_layer = GammaBiasLayer(input_dim, hidden_neurons)
         
         n_layers = 2 * (input_dim + output_dim)
-        d = 2
+        d = 1
         
         # Capas ocultas con activación Tanh (la capa de entrada es la primera, para un total de 8)
         self.tanh_layers = nn.ModuleList([

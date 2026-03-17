@@ -18,8 +18,9 @@ log_file_path = logs_dir_path / f"train_pinn_{now()}.log"
 
 def main():
     
+    max_norm = 0.5
     num_epochs : int = 4000
-    lr = 1e-3
+    lr = 1e-4
     R = 0.15
     lamb = 3.0
     n_days = 30
@@ -52,7 +53,7 @@ def main():
         }
     process_data.process_data(**kwargs)
     # print(f"{num_epochs=}")
-    train_pinn_brusselas(process_data, model=model, device=device, lr=lr, lamb=lamb, num_epochs=num_epochs, save_path=save_path)
+    train_pinn_brusselas(process_data, model=model, device=device, lr=lr, lamb=lamb, num_epochs=num_epochs, save_path=save_path, max_norm=max_norm)
 
     ...
 
