@@ -59,7 +59,7 @@ def train_pinn_brusselas(process_data: ProcessData, model:nn.Module, device:str,
     # optimizer = optim.Adam(model.parameters(), lr=1e-5)
     logger.debug(f"{optimizer=}")
     
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.3162, patience=50, threshold=1e-2)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.3162, patience=50, threshold=1e-3)
     history = {'epoch': [],'loss': [], 'ns_loss': [], 'p_loss': [], 'u_loss': [], 'v_loss': [], 'lr': []}
 
     logger.debug(f"{scheduler.mode=}")
